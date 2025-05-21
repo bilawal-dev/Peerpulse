@@ -22,13 +22,13 @@ export default function LoginForm() {
 
         // simulate login API
         setTimeout(() => {
-            toast.error("Failed To Login!");
+            toast.success("Login Successfully!");
         }, 1500);
 
         setTimeout(() => {
             setFormData({ email: "", password: "" });
             setIsLoading(false);
-            // router.push("/dashboard"); // enable when ready
+            router.push("/dashboard");
         }, 3000);
     };
 

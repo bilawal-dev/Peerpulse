@@ -12,7 +12,7 @@ export default function DashboardPage() {
     const pendingReviews = totalEmployees - completedReviews; // or your logic
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 pb-8">
             {/* ─── Stats Row ─── */}
             <div className="grid grid-cols-1 md:grid-cols-2  gap-6">
                 <Card>

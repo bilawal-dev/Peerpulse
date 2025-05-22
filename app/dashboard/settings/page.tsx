@@ -3,7 +3,7 @@ import { CompanyInformationSettings } from "@/components/Dashboard/Settings/Comp
 
 export default function DashboardSettingsPage() {
     return (
-        <div className="space-y-10 pb-8 overflow-hidden">
+        <div className="space-y-8 pb-8">
             {/* Review Process */}
             <ReviewProcessSettings />
 

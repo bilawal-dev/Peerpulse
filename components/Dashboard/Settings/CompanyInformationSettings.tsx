@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { UploadCloud, ImageIcon } from "lucide-react";
+import { UploadCloud, ImageIcon, X } from "lucide-react";
 
 export function CompanyInformationSettings() {
     const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -18,27 +18,34 @@ export function CompanyInformationSettings() {
     const [logoUrl, setLogoUrl] = useState<string>("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Generate object URL for the uploaded file
+    // generate & revoke object URL
     useEffect(() => {
         if (!logoFile) {
             setFilePreviewUrl(null);
             return;
         }
-        const objectUrl = URL.createObjectURL(logoFile);
-        setFilePreviewUrl(objectUrl);
-        return () => {
-            URL.revokeObjectURL(objectUrl);
-        };
+        const obj = URL.createObjectURL(logoFile);
+        setFilePreviewUrl(obj);
+        return () => URL.revokeObjectURL(obj);
     }, [logoFile]);
 
     const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) {
             setLogoFile(e.target.files[0]);
+            setLogoUrl("");
         }
     };
 
-    // Choose which preview to show: local file first, then URL if set
-    const previewSrc = filePreviewUrl ?? (logoUrl.trim() !== "" ? logoUrl : null);
+    const removeLogo = () => {
+        setLogoFile(null);
+        setLogoUrl("");
+        setFilePreviewUrl(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
+    // pick file preview first, then URL preview
+    const previewSrc =
+        filePreviewUrl || (logoUrl.trim() !== "" ? logoUrl : null);
 
     return (
         <Card>
@@ -48,13 +55,13 @@ export function CompanyInformationSettings() {
                     <CardTitle>Company Information</CardTitle>
                 </div>
                 <CardDescription>
-                    Update your company's name and logo.
+                    Update your company&apos;s name and logo.
                 </CardDescription>
             </CardHeader>
 
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Company Name */}
+                    {/* Inputs */}
                     <div className="space-y-6">
                         <div>
                             <Label htmlFor="company-name">Company Name</Label>
@@ -64,52 +71,62 @@ export function CompanyInformationSettings() {
                                 className="mt-1"
                             />
                         </div>
-
                         <div>
-                            <Label htmlFor="company-name">Company Description</Label>
+                            <Label htmlFor="company-description">
+                                Company Description
+                            </Label>
                             <Input
-                                id="company-name"
-                                placeholder="Your Company Desription (optional)"
+                                id="company-description"
+                                placeholder="Your Company Description (optional)"
                                 className="mt-1"
                             />
                         </div>
 
-                        {/* Company Logo */}
+                        {/* Logo field */}
                         <div>
                             <Label>Company Logo</Label>
                             <div className="mt-1">
-                                {/* clickable box + hidden input */}
-                                <label
-                                    htmlFor="company-logo-file"
-                                    className="relative inline-block cursor-pointer"
-                                >
-                                    <input
-                                        ref={fileInputRef}
-                                        id="company-logo-file"
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={onFileChange}
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    />
-
-                                    {previewSrc ? (
+                                {previewSrc ? (
+                                    <div className="relative inline-block">
                                         <img
                                             src={previewSrc}
                                             alt="Logo preview"
                                             className="w-32 h-32 object-cover rounded-md border border-gray-200"
                                         />
-                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={removeLogo}
+                                            className="absolute -top-2 -right-2 bg-white rounded-full p-0.5 shadow hover:bg-gray-100"
+                                            aria-label="Remove logo"
+                                        >
+                                            <X className="h-4 w-4 text-gray-600" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    // only render file input when no preview
+                                    <label
+                                        htmlFor="company-logo-file"
+                                        className="relative inline-block cursor-pointer"
+                                    >
+                                        <input
+                                            ref={fileInputRef}
+                                            id="company-logo-file"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={onFileChange}
+                                            className="absolute inset-0 w-full h-full hidden cursor-pointer"
+                                        />
                                         <div className="w-32 h-32 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md">
                                             <UploadCloud className="h-6 w-6 text-gray-400" />
                                             <span className="text-xs text-gray-500 mt-1">
                                                 Upload Logo
                                             </span>
                                         </div>
-                                    )}
-                                </label>
+                                    </label>
+                                )}
                             </div>
 
-                            {/* URL Input (unaffected by file uploads) */}
+                            {/* URL fallback */}
                             <div className="mt-4">
                                 <Label htmlFor="logo-url">Or enter logo URL</Label>
                                 <Input
@@ -118,7 +135,12 @@ export function CompanyInformationSettings() {
                                     placeholder="https://example.com/logo.png"
                                     className="mt-1"
                                     value={logoUrl}
-                                    onChange={(e) => setLogoUrl(e.target.value)}
+                                    onChange={(e) => {
+                                        setLogoUrl(e.target.value);
+                                        setLogoFile(null);
+                                        if (fileInputRef.current)
+                                            fileInputRef.current.value = "";
+                                    }}
                                 />
                             </div>
                         </div>

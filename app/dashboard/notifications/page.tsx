@@ -1,9 +1,9 @@
-import React from 'react'
+import NotificationsSection from "@/components/Dashboard/Notifications/NotificationsSection";
 
-function DashboardNotificationsPage() {
+export default function DashboardNotificationsPage() {
     return (
-        <div>DashboardNotificationsPage</div>
-    )
+        <div className="space-y-8 pb-8">
+            <NotificationsSection />
+        </div>
+    );
 }
-
-export default DashboardNotificationsPage;

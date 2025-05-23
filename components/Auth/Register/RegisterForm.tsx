@@ -8,14 +8,15 @@ import { Eye, EyeOff } from "lucide-react";
 import ButtonLoader from "@/components/Common/ButtonLoader";
 
 export default function RegisterForm() {
-    const [formData, setFormData] = useState({ email: "", password: "" });
-    const [userType, setUserType] = useState<"COMPANY" | "EMPLOYEE">("EMPLOYEE");
+    const [formData, setFormData] = useState({ companyName: "", email: "", password: "" });
+    // const [userType, setUserType] = useState<"COMPANY" | "EMPLOYEE">("EMPLOYEE");
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -27,7 +28,7 @@ export default function RegisterForm() {
         }, 1000);
 
         setTimeout(() => {
-            setFormData({ email: "", password: "" });
+            setFormData({ companyName: "", email: "", password: "" });
             setIsLoading(false);
         }, 2000);
 
@@ -40,10 +41,26 @@ export default function RegisterForm() {
         <section className="pt-32 pb-16 flex items-center justify-center px-[20px] py-16">
             <div className="w-full max-w-md bg-white rounded-2xl border shadow-sm p-8">
                 <h2 className="text-3xl whitespace-nowrap font-bold text-center text-gray-900 mb-8">
-                    Create an Account
+                    Register Company
                 </h2>
 
                 <form onSubmit={handleSubmit}>
+                    {/* Company Name */}
+                    <div className="mb-5">
+                        <label htmlFor="companyName" className="block text-gray-700 mb-1">
+                            Name
+                        </label>
+                        <input
+                            id="companyName"
+                            name="companyName"
+                            type="text"
+                            value={formData.companyName}
+                            onChange={handleChange}
+                            required
+                            className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:border-brand transition"
+                        />
+                    </div>
+
                     {/* Email */}
                     <div className="mb-5">
                         <label htmlFor="email" className="block text-gray-700 mb-1">
@@ -85,7 +102,7 @@ export default function RegisterForm() {
                     </div>
 
                     {/* Register As */}
-                    <div className="mb-8">
+                    {/* <div className="mb-8">
                         <label className="block text-gray-700 mb-2">Register As:</label>
                         <div className="grid grid-cols-2 bg-red-50 rounded-full overflow-hidden">
                             <button
@@ -109,7 +126,7 @@ export default function RegisterForm() {
                                 Company
                             </button>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Submit */}
                     <button

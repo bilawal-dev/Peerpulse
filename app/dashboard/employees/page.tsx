@@ -1,9 +1,9 @@
-import React from 'react'
+import EmployeesPage from "@/components/Dashboard/Employees/EmployeesPage";
 
-function DashboardEmployeesPage() {
+export default function DashboardEmployeesPage() {
     return (
-        <div>DashboardEmployeesPage</div>
-    )
+        <div className="space-y-8 pb-8">
+            <EmployeesPage />
+        </div>
+    );
 }
-
-export default DashboardEmployeesPage

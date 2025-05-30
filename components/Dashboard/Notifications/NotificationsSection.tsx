@@ -114,7 +114,7 @@ export default function NotificationSection() {
                         </div>
 
                         {/* Initial Send */}
-                        <div className="space-y-1">
+                        <div className="space-y-1 pt-10">
                             <Label htmlFor={`${section.key}-initial`}>Initial Send:</Label>
                             <div
                                 className="flex gap-2 items-center w-full cursor-pointer"

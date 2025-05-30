@@ -35,7 +35,7 @@ export default function DashboardPage() {
             {/* ─── Peer Selection Progress ─── */}
             <Card className="space-y-6">
                 <CardHeader>
-                    <CardTitle>Peer Selection Progress</CardTitle>
+                    <CardTitle className="text-xl">Peer Selection Progress</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -73,7 +73,7 @@ export default function DashboardPage() {
             {/* ─── Survey Progress ─── */}
             <Card className="space-y-6">
                 <CardHeader>
-                    <CardTitle>Survey Progress</CardTitle>
+                    <CardTitle className="text-xl">Survey Progress</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -114,7 +114,7 @@ export default function DashboardPage() {
                     </div>
 
                     <div>
-                        <p className="text-sm text-gray-500">Missing Reviews From:</p>
+                        <p className="text-sm text-gray-500">Missing Reviews Form:</p>
                         <p className="mt-1 text-gray-700">—</p>
                     </div>
                 </CardContent>

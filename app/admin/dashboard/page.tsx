@@ -3,7 +3,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock, FileText, Hourglass, Loader, Users } from "lucide-react";
 
-export default function DashboardPage() {
+export default function AdminDashboardPage() {
     const totalEmployees = 37;
     const selectionsCompleted = 32;
     const pendingSelections = totalEmployees - selectionsCompleted;

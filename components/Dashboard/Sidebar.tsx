@@ -2,31 +2,20 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import {
-    LayoutDashboard,
-    Users,
-    Mail,
-    Settings,
-    Home,
-    ChevronLeft,
-    ChevronRight,
-    FileText,
-} from "lucide-react";
-
-export const NAV_ITEMS = [
-    { href: "/dashboard", label: "Dashboard", target: '_self', Icon: LayoutDashboard },
-    { href: "/dashboard/reviews", label: "Compiled Reviews", target: '_blank', Icon: FileText },
-    { href: "/dashboard/employees", label: "Employee Management", target: '_self', Icon: Users },
-    { href: "/dashboard/notifications", label: "Email Notifications", target: '_self', Icon: Mail },
-    { href: "/dashboard/settings", label: "Settings", target: '_self', Icon: Settings },
-];
+import { Home, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface SidebarProps {
     collapsed: boolean;
     onToggle: () => void;
+    navItems: Array<{
+        href: string;
+        label: string;
+        target?: string;
+        Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+    }>;
 }
 
-export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggle, navItems }: SidebarProps) {
     const pathname = usePathname();
 
     return (
@@ -49,7 +38,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
             {/* Nav */}
             <nav className="p-4 flex-1 flex flex-col gap-5 overflow-y-auto">
-                {NAV_ITEMS.map(({ href, label, target, Icon }) => {
+                {navItems.map(({ href, label, target, Icon }) => {
                     const active = pathname === href;
                     return (
                         <Link
@@ -68,9 +57,9 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             {/* CTA or Home icon */}
             {!collapsed ? (
                 <div className="p-4 mx-3 my-4 bg-slate-50 rounded-lg text-center">
-                    <h3 className="text-sm font-semibold">Power Up Your Reviews</h3>
+                    <h3 className="text-sm font-semibold">Empower Your Team</h3>
                     <p className="text-xs text-gray-600 mt-1">
-                        Upload your employees to kickstart the peer-review process.
+                        Elevu makes 360° performance reviews simple with peer feedback and insights.
                     </p>
                     <Link href="/">
                         <button className="mt-3 py-2 w-full bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">

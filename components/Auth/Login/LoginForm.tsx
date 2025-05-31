@@ -28,7 +28,7 @@ export default function LoginForm() {
         setTimeout(() => {
             setFormData({ email: "", password: "" });
             setIsLoading(false);
-            router.push("/dashboard");
+            router.push("/admin/dashboard");
         }, 3000);
     };
 

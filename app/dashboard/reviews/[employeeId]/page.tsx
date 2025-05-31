@@ -4,6 +4,15 @@ import React, { useState } from "react";
 import { Mail, Download, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogTrigger,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function EmployeeReviewsDashboardPage() {
     const reviewData = {
@@ -52,7 +61,7 @@ export default function EmployeeReviewsDashboardPage() {
             <div className="review-container max-w-4xl mx-auto">
 
                 {/* Back to Dashboard */}
-                <Link href="/reviews" className="absolute top-3 sm:top-8 left-3 sm:left-8 flex items-center gap-2 rounded-full bg-white border border-gray-300 p-2 sm:p-3  shadow hover:bg-gray-100 transition">
+                <Link href="/dashboard/reviews" className="absolute top-3 sm:top-8 left-3 sm:left-8 flex items-center gap-2 rounded-full bg-white border border-gray-300 p-2 sm:p-3  shadow hover:bg-gray-100 transition">
                     <ArrowLeft className="w-6 h-6 text-gray-700" />
                 </Link>
 
@@ -78,7 +87,7 @@ export default function EmployeeReviewsDashboardPage() {
                 </div>
 
                 {/* Meta Info */}
-                <div className="meta-info grid grid-cols-1 md:grid-cols-3 gap-8 bg-white p-8 rounded-2xl shadow mb-16">
+                <section className="meta-info grid grid-cols-1 md:grid-cols-3 gap-8 bg-white p-8 rounded-2xl shadow mb-16">
                     <div className="meta-item text-center">
                         <span className="meta-label text-sm text-gray-500 block mb-2">
                             EMPLOYEE
@@ -103,10 +112,10 @@ export default function EmployeeReviewsDashboardPage() {
                             {reviewData.department}
                         </span>
                     </div>
-                </div>
+                </section>
 
                 {/* Self Assessment Section */}
-                <div className="review-section mb-12 bg-white p-8 rounded-2xl shadow">
+                <section className="review-section mb-12 bg-white p-8 rounded-2xl shadow">
                     <div className="section-header flex items-center gap-4 mb-8">
                         <h2 className="section-title text-2xl font-bold text-gray-900">
                             Self Assessment
@@ -129,10 +138,10 @@ export default function EmployeeReviewsDashboardPage() {
                             </div>
                         )
                     )}
-                </div>
+                </section>
 
                 {/* Peer Feedback Section */}
-                <div className="review-section mb-12 bg-white p-8 rounded-2xl shadow">
+                <section className="review-section mb-12 bg-white p-8 rounded-2xl shadow">
                     <div className="section-header flex items-center gap-4 mb-8">
                         <h2 className="section-title text-2xl font-bold text-gray-900">
                             Peer Feedback
@@ -160,72 +169,57 @@ export default function EmployeeReviewsDashboardPage() {
                             </div>
                         )
                     )}
-                </div>
+                </section>
             </div>
 
             {/* Export Controls */}
-            <>
-                <button
-                    className="export-button fixed bottom-8 right-8 bg-brand text-white w-10 sm:w-16 h-10 sm:h-16 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition"
-                    onClick={() => setExportOpen(true)}
-                >
-                    <Download size={24} />
-                </button>
-
-                {exportOpen && (
-                    <div
-                        className="export-modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-                        onClick={() => setExportOpen(false)}
+            <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+                <DialogTrigger asChild>
+                    <Button
+                        className="export-button fixed bottom-8 right-8 bg-brand hover:bg-brand/90 text-white w-10 sm:w-14 h-10 sm:h-14 rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition"
+                        onClick={() => setExportOpen(true)}
                     >
-                        <div
-                            className="modal-content bg-white p-8 rounded-2xl w-11/12 max-w-md"
-                            onClick={(e) => e.stopPropagation()}
+                        <Download size={25} />
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="modal-content fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-8 rounded-2xl w-11/12 max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl">Export Review</DialogTitle>
+                    </DialogHeader>
+                    <div className="export-options flex flex-col gap-4 mt-4">
+                        <Button
+                            variant="outline"
+                            className="export-option flex justify-start items-center gap-4 px-5 py-10 bg-gray-100 rounded-lg hover:bg-gray-200"
+                            onClick={sendReviewEmail}
                         >
-                            <div className="modal-header flex justify-between items-center mb-6">
-                                <h3 className="modal-title text-xl font-semibold text-gray-900">
-                                    Export Review
-                                </h3>
-                                <button
-                                    className="close-button text-gray-500 hover:text-gray-900"
-                                    onClick={() => setExportOpen(false)}
-                                >
-                                    ✕
-                                </button>
+                            <Mail size={24} />
+                            <div className="export-option-text text-left">
+                                <h4 className="export-option-title font-medium text-gray-900">
+                                    Email Review
+                                </h4>
+                                <p className="export-option-description text-sm font-normal text-gray-500">
+                                    Send this review to employee
+                                </p>
                             </div>
-                            <div className="export-options flex flex-col gap-4">
-                                <button
-                                    className="export-option flex items-center gap-4 p-4 bg-gray-100 rounded-lg hover:bg-gray-200"
-                                    onClick={sendReviewEmail}
-                                >
-                                    <Mail size={24} />
-                                    <div className="export-option-text text-left">
-                                        <h4 className="export-option-title font-semibold text-gray-900">
-                                            Email Review
-                                        </h4>
-                                        <p className="export-option-description text-sm text-gray-500">
-                                            Send this review to employee
-                                        </p>
-                                    </div>
-                                </button>
-                                <button
-                                    className="export-option flex items-center gap-4 p-4 bg-gray-100 rounded-lg hover:bg-gray-200"
-                                    onClick={exportPDF}
-                                >
-                                    <Download size={24} />
-                                    <div className="export-option-text text-left">
-                                        <h4 className="export-option-title font-semibold text-gray-900">
-                                            Download PDF
-                                        </h4>
-                                        <p className="export-option-description text-sm text-gray-500">
-                                            Save review as PDF file
-                                        </p>
-                                    </div>
-                                </button>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="export-option flex justify-start items-center gap-4 px-5 py-10 bg-gray-100 rounded-lg hover:bg-gray-200"
+                            onClick={exportPDF}
+                        >
+                            <Download size={24} />
+                            <div className="export-option-text text-left">
+                                <h4 className="export-option-title font-medium text-gray-900">
+                                    Download PDF
+                                </h4>
+                                <p className="export-option-description text-sm font-normal text-gray-500">
+                                    Save review as PDF file
+                                </p>
                             </div>
-                        </div>
+                        </Button>
                     </div>
-                )}
-            </>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

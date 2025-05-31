@@ -15,7 +15,7 @@ import {
 
 export const NAV_ITEMS = [
     { href: "/dashboard", label: "Dashboard", target: '_self', Icon: LayoutDashboard },
-    { href: "/reviews", label: "Compiled Reviews", target: '_blank', Icon: FileText },
+    { href: "/dashboard/reviews", label: "Compiled Reviews", target: '_blank', Icon: FileText },
     { href: "/dashboard/employees", label: "Employee Management", target: '_self', Icon: Users },
     { href: "/dashboard/notifications", label: "Email Notifications", target: '_self', Icon: Mail },
     { href: "/dashboard/settings", label: "Settings", target: '_self', Icon: Settings },

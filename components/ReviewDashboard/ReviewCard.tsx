@@ -17,7 +17,7 @@ export default function ReviewCard({ review }: Props) {
                 {review.status}
             </span>
             <Link
-                href={`/reviews/${review.name}`}
+                href={`/dashboard/reviews/${review.name}`}
                 className="view-button block w-fit bg-brand hover:bg-brand/90 text-white px-4 py-2 rounded-md text-sm font-medium"
             >
                 View Review

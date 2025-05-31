@@ -10,13 +10,15 @@ import {
     Home,
     ChevronLeft,
     ChevronRight,
+    FileText,
 } from "lucide-react";
 
 export const NAV_ITEMS = [
-    { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
-    { href: "/dashboard/employees", label: "Employee Management", Icon: Users },
-    { href: "/dashboard/notifications", label: "Email Notifications", Icon: Mail },
-    { href: "/dashboard/settings", label: "Settings", Icon: Settings },
+    { href: "/dashboard", label: "Dashboard", target: '_self', Icon: LayoutDashboard },
+    { href: "/reviews", label: "Compiled Reviews", target: '_blank', Icon: FileText },
+    { href: "/dashboard/employees", label: "Employee Management", target: '_self', Icon: Users },
+    { href: "/dashboard/notifications", label: "Email Notifications", target: '_self', Icon: Mail },
+    { href: "/dashboard/settings", label: "Settings", target: '_self', Icon: Settings },
 ];
 
 interface SidebarProps {
@@ -47,12 +49,13 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
             {/* Nav */}
             <nav className="p-4 flex-1 flex flex-col gap-5 overflow-y-auto">
-                {NAV_ITEMS.map(({ href, label, Icon }) => {
+                {NAV_ITEMS.map(({ href, label, target, Icon }) => {
                     const active = pathname === href;
                     return (
                         <Link
                             key={href}
                             href={href}
+                            target={target}
                             className={`flex items-center p-2 rounded-md text-sm transition ${active ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-100"}              `}
                         >
                             <Icon className={`mr-3 h-5 w-5 transition ${active ? "text-blue-600" : "text-gray-500"}`} />

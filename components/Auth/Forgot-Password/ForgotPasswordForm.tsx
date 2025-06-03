@@ -2,30 +2,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
 import ButtonLoader from "@/components/Common/ButtonLoader";
+import { useAuth } from "@/context/AuthContext";
 
 export default function ForgotPasswordForm() {
     const [email, setEmail] = useState("");
     const [isSending, setIsSending] = useState(false);
-    const router = useRouter();
 
-    const handleSubmit = (e: React.FormEvent) => {
+
+    const { forgotPassword } = useAuth();
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSending(true);
-
-        // simulate API call
-        setTimeout(() => {
-            toast.success(`Reset link sent to ${email}`);
-            setEmail("");
-            setIsSending(false);
-        }, 1500);
-
-        setTimeout(() => {
-            router.push("/login");
-        }, 3000)
+        await forgotPassword(email);
+        setEmail("");
+        setIsSending(false);
     };
+
 
     return (
         <section className="pt-32 pb-16 flex items-center justify-center px-[20px] py-16">

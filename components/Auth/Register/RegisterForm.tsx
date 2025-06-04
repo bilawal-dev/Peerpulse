@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import ButtonLoader from "@/components/Common/ButtonLoader";
-import { useAuth } from "@/context/AuthContext";
 
 export default function RegisterForm() {
     const [formData, setFormData] = useState({ companyName: "", email: "", password: "" });
@@ -19,17 +18,24 @@ export default function RegisterForm() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     }
 
-    const { registerCompany } = useAuth();
-
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        const { companyName, email, password } = formData;
-        await registerCompany(companyName, email, password);
-        setFormData({ companyName: "", email: "", password: "" });
-        setIsLoading(false);
-    };
 
+        // simulate API
+        setTimeout(() => {
+            toast.success('Verification Email Sent');
+        }, 1000);
+
+        setTimeout(() => {
+            setFormData({ companyName: "", email: "", password: "" });
+            setIsLoading(false);
+        }, 2000);
+
+        setTimeout(() => {
+            router.push(`/verify-email-sent?email=${encodeURIComponent(formData.email)}`)
+        }, 3000);
+    };
 
     return (
         <section className="pt-32 pb-16 flex items-center justify-center px-[20px] py-16">

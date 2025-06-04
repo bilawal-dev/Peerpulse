@@ -3,29 +3,34 @@
 import { useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import ButtonLoader from "@/components/Common/ButtonLoader";
-import { useAuth } from "@/context/AuthContext";
 
 export default function LoginForm() {
     const [formData, setFormData] = useState({ email: "", password: "" });
-    const [userType, setUserType] = useState<"COMPANY" | "EMPLOYEE">("EMPLOYEE");
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const router = useRouter();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
         setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    const { login } = useAuth();
-
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        await login(formData.email, formData.password, userType);
-        setFormData({ email: "", password: "" });
-        setIsLoading(false);
-    };
 
+        // simulate login API
+        setTimeout(() => {
+            toast.success("Login Successfully!");
+        }, 1500);
+
+        setTimeout(() => {
+            setFormData({ email: "", password: "" });
+            setIsLoading(false);
+            router.push("/admin/dashboard");
+        }, 3000);
+    };
 
     return (
         <section className="pt-32 pb-16 flex items-center justify-center px-[20px] py-16">
@@ -52,7 +57,7 @@ export default function LoginForm() {
                     </div>
 
                     {/* Password with toggle */}
-                    <div className="mb-5 relative">
+                    <div className="mb-2 relative">
                         <label htmlFor="password" className="block text-gray-700 mb-1">
                             Password
                         </label>
@@ -73,32 +78,6 @@ export default function LoginForm() {
                         >
                             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                         </button>
-                    </div>
-
-                    <div className="mb-8">
-                        <label className="block text-gray-700 mb-2">Login As:</label>
-                        <div className="grid grid-cols-2 bg-red-50 rounded-full overflow-hidden">
-                            <button
-                                type="button"
-                                onClick={() => setUserType("EMPLOYEE")}
-                                className={`py-2 text-center font-medium ${userType === "EMPLOYEE"
-                                    ? "bg-brand text-white"
-                                    : "text-brand hover:bg-red-100"
-                                    }`}
-                            >
-                                Employee
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setUserType("COMPANY")}
-                                className={`py-2 text-center font-medium ${userType === "COMPANY"
-                                    ? "bg-brand text-white"
-                                    : "text-brand hover:bg-red-100"
-                                    }`}
-                            >
-                                Company
-                            </button>
-                        </div>
                     </div>
 
                     {/* Forgot Password Link */}

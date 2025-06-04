@@ -1,34 +1,12 @@
 "use client";
 
 import Sidebar from "@/components/Dashboard/Sidebar";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { adminNavItems } from "./navItems";
-import { useAuth } from "@/context/AuthContext";
-
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
     const [collapsed, setCollapsed] = useState(false);
-
-    const { user, loading } = useAuth();
-
-    const router = useRouter();
-
-    useEffect(() => {
-        if (!loading) {
-            if (!user) {
-                // Not logged in → send to /login
-                router.push("/login");
-            } else if (user.role !== "company") {
-                // Logged in but not a company admin → send them to employee dashboard
-                router.push("/employee/dashboard");
-            }
-        }
-    }, [user, loading, router]);
-
-
-    // Prevent rendering layout if user is not authenticated (Avoids flickering)
-    if (!user || user.role !== "company") return null;
 
     const pathName = usePathname();
 

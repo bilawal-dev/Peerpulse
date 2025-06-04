@@ -12,11 +12,7 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
     const { user, loading } = useAuth();
 
     const router = useRouter();
-    
-    const pathName = usePathname();
 
-    const reviewPath = pathName.startsWith('/employee/dashboard/review-form');
-    
     // * REDIRECT TO LOGIN IF USER IS NOT AUTHENTICATED OR NOT AN EMPLOYEE
     useEffect(() => {
         if (!loading) {
@@ -34,6 +30,9 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
     // Prevent rendering layout if user is not authenticated (Avoids flickering)
     if (!user || user.role !== "employee") return null;
 
+    const pathName = usePathname();
+
+    const reviewPath = pathName.startsWith('/employee/dashboard/review-form');
 
     if (reviewPath) {
         return (

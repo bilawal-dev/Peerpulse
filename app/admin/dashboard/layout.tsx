@@ -14,10 +14,6 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
     const router = useRouter();
 
-    const pathName = usePathname();
-
-    const reviewsPath = pathName.startsWith('/admin/dashboard/reviews');
-    
     useEffect(() => {
         if (!loading) {
             if (!user) {
@@ -33,6 +29,10 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
     // Prevent rendering layout if user is not authenticated (Avoids flickering)
     if (!user || user.role !== "company") return null;
+
+    const pathName = usePathname();
+
+    const reviewsPath = pathName.startsWith('/admin/dashboard/reviews');
 
     if (reviewsPath) {
         return (

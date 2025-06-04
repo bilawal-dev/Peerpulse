@@ -17,7 +17,8 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
     const pathName = usePathname();
 
     const reviewsPath = pathName.startsWith('/admin/dashboard/reviews');
-    
+
+    // * REDIRECT TO LOGIN IF USER IS NOT AUTHENTICATED OR TO EMPLOYEE DASHBOARD IF NOT AN ADMIN
     useEffect(() => {
         if (!loading) {
             if (!user) {

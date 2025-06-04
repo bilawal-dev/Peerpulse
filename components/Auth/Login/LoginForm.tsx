@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function LoginForm() {
     const [formData, setFormData] = useState({ email: "", password: "" });
-    const [userType, setUserType] = useState<"COMPANY" | "EMPLOYEE">("EMPLOYEE");
+    const [userType, setUserType] = useState<"company" | "employee">("employee");
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
@@ -80,8 +80,8 @@ export default function LoginForm() {
                         <div className="grid grid-cols-2 bg-red-50 rounded-full overflow-hidden">
                             <button
                                 type="button"
-                                onClick={() => setUserType("EMPLOYEE")}
-                                className={`py-2 text-center font-medium ${userType === "EMPLOYEE"
+                                onClick={() => setUserType("employee")}
+                                className={`py-2 text-center font-medium ${userType === "employee"
                                     ? "bg-brand text-white"
                                     : "text-brand hover:bg-red-100"
                                     }`}
@@ -90,8 +90,8 @@ export default function LoginForm() {
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setUserType("COMPANY")}
-                                className={`py-2 text-center font-medium ${userType === "COMPANY"
+                                onClick={() => setUserType("company")}
+                                className={`py-2 text-center font-medium ${userType === "company"
                                     ? "bg-brand text-white"
                                     : "text-brand hover:bg-red-100"
                                     }`}

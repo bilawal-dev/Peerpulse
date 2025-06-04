@@ -9,7 +9,7 @@ export type User = any;
 export interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string, userType: "COMPANY" | "EMPLOYEE") => Promise<void>;
+  login: (email: string, password: string, userType: "company" | "employee") => Promise<void>;
   registerCompany: (companyName: string, email: string, password: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
 }
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             const data = await response.json();
             setUser(data.data);
           } else {
-            if (response.status === 403) {
+            if (response.status === 401) {
               localStorage.removeItem("elevu_auth");
             }
             setUser(null);
@@ -64,9 +64,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 
   // * Login (HANDLES COMPANY & EMPLOYEE)
-  const login = async (email: string, password: string, userType: "COMPANY" | "EMPLOYEE") => {
+  const login = async (email: string, password: string, userType: "company" | "employee") => {
     try {
-      const endpoint = userType === "COMPANY" ? "/company/login" : "/employee/login";
+      const endpoint = userType === "company" ? "/company/login" : "/employee/login";
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}${endpoint}`, {
         method: "POST",
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       toast.success("Login Successful!");
 
       setTimeout(() => {
-        const dashboardPath = userType === "COMPANY" ? "/admin/dashboard" : "/employee/dashboard";
+        const dashboardPath = userType === "company" ? "/admin/dashboard" : "/employee/dashboard";
         window.location.href = dashboardPath;
       }, 500);
     } catch (err: any) {

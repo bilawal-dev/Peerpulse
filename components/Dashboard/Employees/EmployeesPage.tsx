@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useState, ChangeEvent, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  ChangeEvent,
+  useRef,
+} from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,34 +31,55 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2, MailPlus, Trash2 } from "lucide-react";
 
+//
+// We define a TypeScript type that matches the shape returned by GET /company/get-all-employee.
+// We only pick the fields we need (name, email, department, and nested manager.email).
+//
+type FetchedEmployee = {
+  employee_id: number;
+  name: string;
+  email: string;
+  department: string;
+  // other fields exist, but we only care about manager.email for now:
+  manager: {
+    employee_id: number;
+    name: string | null;
+    email: string;
+    // the rest of the manager fields are omitted for brevity
+  } | null;
+  // NOTE: no “status” comes back yet—backend dev will add it later.
+};
+
+//
+// We keep our existing “local” Employee type for CSV parsing and POST payload.
+// This is separate from FetchedEmployee.
+//
 type Employee = {
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
   department: string;
   code?: string;
   status?: string;
-  managerName?: string;
+  managerEmail?: string;
 };
 
 const initialEmployeeState: Employee = {
-  firstName: "",
-  lastName: "",
+  name: "",
   email: "",
   department: "",
   code: "",
   status: "initial",
-  managerName: "",
+  managerEmail: "",
 };
 
 export default function EmployeesPage() {
-  // Main data
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  // Instead of Employee[], we now store FetchedEmployee[] in state.
+  const [employees, setEmployees] = useState<FetchedEmployee[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  // File upload
+  // File upload ref
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Add dialog
@@ -69,28 +95,127 @@ export default function EmployeesPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
 
-  // Handle file upload CSV → employees
+  //
+  // 1) Fetch all employees from the server and populate state.
+  //    Called on component mount, and also after a successful upload.
+  //
+  const fetchEmployees = async () => {
+    try {
+      const token = localStorage.getItem("elevu_auth");
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-employee`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(
+          `GET /company/get-all-employee responded with ${response.status}: ${text}`
+        );
+      }
+
+      const json = await response.json();
+      // json.data is the array of FetchedEmployee
+      console.log("Fetched employees:", json.data);
+      setEmployees(json.data);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      // Optionally show a toast/alert here
+    }
+  };
+
+  // Fetch once on mount
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  //
+  // 2) When the user selects a CSV file, parse it, POST to /company/upload-employees,
+  //    then re-fetch the full list of employees for display.
+  //
   const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // 2.1 Read CSV as text
     const text = await file.text();
+
+    // 2.2 Parse CSV → array of Employee objects (camelCase keys)
     const [headerLine, ...lines] = text.trim().split("\n");
     const headers = headerLine.split(",").map((h) => h.trim());
-    const data = lines.map((line) => {
+    const parsedData: Employee[] = lines.map((line) => {
       const cols = line.split(",").map((c) => c.trim());
       return headers.reduce((acc, key, i) => {
-        (acc as any)[key] = cols[i] ?? "";
+        // If CSV header was "manager_email", store it in `managerEmail` in parsedData
+        const normalizedKey =
+          key === "manager_email" ? "managerEmail" : key;
+        (acc as any)[normalizedKey] = cols[i] ?? "";
         return acc;
       }, {} as any) as Employee;
     });
-    setEmployees(data);
+
+    console.log("Parsed CSV data:", parsedData);
+
+    // 2.3 Build the payload with snake_case for the POST body
+    const payload = parsedData.map((emp) => ({
+      name: emp.name,
+      email: emp.email,
+      department: emp.department,
+      manager_email: emp.managerEmail, // <-- snake_case for your API
+    }));
+
+    try {
+      const token = localStorage.getItem("elevu_auth");
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/upload-employees`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `POST /company/upload-employees responded with ${response.status}: ${errorText}`
+        );
+      }
+
+      // If the upload succeeded, re-fetch the table data
+      await fetchEmployees();
+    } catch (error: any) {
+      console.error("Error uploading employees:", error);
+      alert(
+        "There was a problem uploading employees to the server:\n" +
+        error.message
+      );
+    }
   };
 
-  // Download CSV template
+  //
+  // 3) Download CSV template (unchanged)
+  //
   const downloadTemplate = () => {
     const template = [
-      ["firstName", "lastName", "email", "department", "managerName", "code", "status"],
-      ["John", "Doe", "john.doe@example.com", "Sales", "Jane Smith", "jd123", "initial"],
+      ["name", "email", "department", "managerEmail", "status"],
+      [
+        "John Doe",
+        "john.doe@example.com",
+        "Sales",
+        "janesmith@example.com",
+        "Initial Upload",
+      ],
     ]
       .map((r) => r.join(","))
       .join("\n");
@@ -103,38 +228,74 @@ export default function EmployeesPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Add new employee
+  //
+  // 4) Local “Add Employee” (UI-only; does not hit the server)
+  //
   const handleAdd = () => {
-    setEmployees((prev) => [...prev, newEmp]);
+    // We can either stub a new FetchedEmployee or push a placeholder.
+    // For now, we’ll push a minimal object so the row shows up until backend is implemented.
+    const temp: any = {
+      employee_id: Date.now(), // placeholder
+      name: newEmp.name,
+      email: newEmp.email,
+      department: newEmp.department,
+      manager: newEmp.managerEmail
+        ? { employee_id: 0, name: null, email: newEmp.managerEmail }
+        : null,
+    };
+    setEmployees((prev) => [...prev, temp]);
     setAddOpen(false);
     setNewEmp(initialEmployeeState);
   };
 
-  // Open edit slide-over
+  //
+  // 5) Local “Edit Employee” (UI-only; does not hit the server)
+  //
   const onEditClick = (index: number) => {
     setEditIndex(index);
-    setEditEmp(employees[index]);
+    // Map the FetchedEmployee at index into our small Employee form
+    const emp = employees[index];
+    setEditEmp({
+      name: emp.name,
+      email: emp.email,
+      department: emp.department,
+      managerEmail: emp.manager?.email || "",
+      status: emp.hasOwnProperty("status") ? (emp as any).status : undefined,
+    });
     setEditOpen(true);
   };
 
-  // Save edited employee
   const handleEditSave = () => {
     if (editIndex === null) return;
     setEmployees((prev) =>
-      prev.map((emp, i) => (i === editIndex ? editEmp : emp))
+      prev.map((emp, i) =>
+        i === editIndex
+          ? {
+            ...emp,
+            name: editEmp.name,
+            email: editEmp.email,
+            department: editEmp.department,
+            manager: editEmp.managerEmail
+              ? { employee_id: 0, name: null, email: editEmp.managerEmail }
+              : null,
+            // status is not yet returned by the backend
+          }
+          : emp
+      )
     );
     setEditOpen(false);
     setEditIndex(null);
     setEditEmp(initialEmployeeState);
   };
 
-  // Open delete confirmation
+  //
+  // 6) Local “Delete Employee” (UI-only; does not hit the server)
+  //
   const onDeleteClick = (index: number) => {
     setDeleteIndex(index);
     setDeleteOpen(true);
   };
 
-  // Confirm deletion
   const handleDeleteConfirm = () => {
     if (deleteIndex === null) return;
     setEmployees((prev) => prev.filter((_, i) => i !== deleteIndex));
@@ -142,9 +303,13 @@ export default function EmployeesPage() {
     setDeleteIndex(null);
   };
 
-  // Filtered list
+  //
+  // 7) Filtering logic (for now, since backend doesn’t supply `status`, this will show all
+  //    when “All Status” is selected; any other status choice yields an empty list until your
+  //    backend populates employee.status.)
+  //
   const filtered = employees.filter((emp) =>
-    statusFilter === "all" ? true : emp.status === statusFilter
+    statusFilter === "all" ? true : (emp as any).status === statusFilter
   );
 
   return (
@@ -163,8 +328,9 @@ export default function EmployeesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="initial">Initial Upload</SelectItem>
-                <SelectItem value="selected">Selected Peers</SelectItem>
+                <SelectItem value="Initial Upload">Initial Upload</SelectItem>
+                <SelectItem value="Peer Selected">Peer Selected</SelectItem>
+                <SelectItem value="Review Given">Review Given</SelectItem>
               </SelectContent>
             </Select>
             <span className="text-sm text-gray-500">
@@ -173,6 +339,7 @@ export default function EmployeesPage() {
           </div>
 
           <div className="flex items-center space-x-2">
+
             <TooltipProvider delayDuration={100}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -180,16 +347,21 @@ export default function EmployeesPage() {
                     Download Template
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top" align="center" className="bg-black/90">
+                <TooltipContent
+                  side="top"
+                  align="center"
+                  className="bg-black/90"
+                >
                   Download CSV template, fill it, then upload.
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
 
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
+            <Button onClick={() => alert("INVITE ALL EMPLOYEES VIA EMAIL")} className="bg-blue-600 hover:bg-blue-700">
+              Invite All Employees
+            </Button>
+
+            <Button onClick={() => fileInputRef.current?.click()} className="bg-blue-600 hover:bg-blue-700">
               Upload Employees
             </Button>
             <input
@@ -213,19 +385,16 @@ export default function EmployeesPage() {
                 </DialogHeader>
                 <div className="space-y-4 mt-4">
                   {[
-                    { label: "First Name", key: "firstName" },
-                    { label: "Last Name", key: "lastName" },
+                    { label: "Name", key: "name" },
                     { label: "Email", key: "email" },
                     { label: "Department", key: "department" },
-                    { label: "Code", key: "code" },
-                    { label: "Manager Name", key: "managerName" },
+                    { label: "Manager Email", key: "managerEmail" },
                   ].map(({ label, key }) => (
                     <div key={key} className="space-y-1">
                       <Label htmlFor={key}>{label}</Label>
                       <Input
                         id={key}
                         value={(newEmp as any)[key] || ""}
-                        type="email"
                         onChange={(e) =>
                           setNewEmp((s) => ({ ...s, [key]: e.target.value }))
                         }
@@ -244,8 +413,15 @@ export default function EmployeesPage() {
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="initial">Initial Upload</SelectItem>
-                        <SelectItem value="selected">Selected Peers</SelectItem>
+                        <SelectItem value="Initial Upload">
+                          Initial Upload
+                        </SelectItem>
+                        <SelectItem value="Peer Selected">
+                          Peer Selected
+                        </SelectItem>
+                        <SelectItem value="Review Given">
+                          Review Given
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -270,11 +446,10 @@ export default function EmployeesPage() {
                   "Name",
                   "Email",
                   "Department",
-                  "Code",
                   "Peer Selection",
                   "Review",
                   "Status",
-                  "Manager",
+                  "Manager Email",
                   "Actions",
                 ].map((h) => (
                   <th
@@ -289,47 +464,42 @@ export default function EmployeesPage() {
             <tbody className="bg-white divide-y text-sm divide-gray-200">
               {filtered.map((emp, idx) => (
                 <tr key={idx}>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {emp.firstName} {emp.lastName}
-                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">{emp.name}</td>
                   <td className="px-4 py-3 whitespace-nowrap">{emp.email}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">{emp.department}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">{emp.code || "-"}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    {emp.code ? (
-                      <a
-                        href={`/selection/${emp.code}`}
-                        target="_blank"
-                        className="text-blue-600 hover:underline"
-                      >
-                        Selection Link
-                      </a>
-                    ) : (
-                      "-"
-                    )}
+                    {emp.department}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    {emp.code ? (
-                      <a
-                        href={`/review/${emp.code}`}
-                        target="_blank"
-                        className="text-blue-600 hover:underline"
-                      >
-                        Review Link
-                      </a>
-                    ) : (
-                      "-"
-                    )}
+                    <a
+                      href={`/employee/dashboard/peer-selection`}
+                      target="_blank"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Selection Link
+                    </a>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <a
+                      href={`/employee/dashboard/review-form`}
+                      target="_blank"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Review Link
+                    </a>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap capitalize">
-                    {emp.status || "-"}
+                    {/* No status yet from backend → show "-" */}
+                    {(emp as any).status || "-"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    {emp.managerName || "-"}
+                    {emp.manager?.email || "-"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap flex space-x-2">
                     <button onClick={() => onEditClick(idx)}>
                       <Edit2 className="h-5 w-5 text-blue-500 hover:text-blue-700" />
+                    </button>
+                    <button onClick={() => alert("SEND EMAIL TO EMPLOYEE")}>
+                      <MailPlus className="h-5 w-5 text-blue-500 hover:text-blue-700" />
                     </button>
                     <button onClick={() => onDeleteClick(idx)}>
                       <Trash2 className="h-5 w-5 text-red-500 hover:text-red-700" />
@@ -340,7 +510,7 @@ export default function EmployeesPage() {
               {filtered.length === 0 && (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={8}
                     className="px-4 pt-10 py-2 text-center text-sm text-gray-500"
                   >
                     No employees to display.
@@ -362,12 +532,10 @@ export default function EmployeesPage() {
             </DialogHeader>
             <div className="space-y-4 mt-4">
               {[
-                { label: "First Name", key: "firstName" },
-                { label: "Last Name", key: "lastName" },
+                { label: "Name", key: "name" },
                 { label: "Email", key: "email" },
                 { label: "Department", key: "department" },
-                { label: "Code", key: "code" },
-                { label: "Manager Name", key: "managerName" },
+                { label: "Manager Email", key: "managerEmail" },
               ].map(({ label, key }) => (
                 <div key={key} className="space-y-1">
                   <Label htmlFor={`edit-${key}`}>{label}</Label>
@@ -392,8 +560,11 @@ export default function EmployeesPage() {
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="initial">Initial Upload</SelectItem>
-                    <SelectItem value="selected">Selected Peers</SelectItem>
+                    <SelectItem value="Initial Upload">
+                      Initial Upload
+                    </SelectItem>
+                    <SelectItem value="Peer Selected">Peer Selected</SelectItem>
+                    <SelectItem value="Review Given">Review Given</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -407,7 +578,6 @@ export default function EmployeesPage() {
           </DialogContent>
         </Dialog>
 
-
         {/* Delete Confirmation Modal */}
         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <DialogTrigger asChild>
@@ -420,10 +590,8 @@ export default function EmployeesPage() {
             <p className="mt-4">
               Are you sure you want to delete{" "}
               <strong>
-                {deleteIndex !== null
-                  ? `${employees[deleteIndex].firstName} ${employees[deleteIndex].lastName}`
-                  : ""}
-              </strong>
+                {deleteIndex !== null ? employees[deleteIndex].name : ""}
+              </strong>{" "}
               ?
             </p>
             <DialogFooter className="mt-6 flex justify-end space-x-2">
@@ -439,7 +607,6 @@ export default function EmployeesPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
       </CardContent>
     </Card>
   );

@@ -17,14 +17,12 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
 
     const reviewPath = pathName.startsWith('/employee/dashboard/review-form');
     
-    // * REDIRECT TO LOGIN IF USER IS NOT AUTHENTICATED OR NOT AN EMPLOYEE
+    // * REDIRECT TO LOGIN IF USER IS NOT AUTHENTICATED OR TO ADMIN DASHBOARD IF NOT AN EMPLOYEE
     useEffect(() => {
         if (!loading) {
             if (!user) {
-                // Not logged in → send to /login
                 router.push("/login");
             } else if (user.role !== "employee") {
-                // Logged in but not an employee → send them to admin dashboard
                 router.push("/admin/dashboard");
             }
         }

@@ -1,9 +1,8 @@
+// components/Dashboard/Settings/ReviewProcessSettings.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Settings2, Calendar as CalendarIcon } from "lucide-react";
-
 import {
     Card,
     CardHeader,
@@ -13,7 +12,6 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-
 import {
     Popover,
     PopoverTrigger,
@@ -21,10 +19,51 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
+import { Settings2, Calendar as CalendarIcon } from "lucide-react";
 
-export function ReviewProcessSettings() {
-    const [startDate, setStartDate] = useState<Date>(new Date());
-    const [endDate, setEndDate] = useState<Date | undefined>();
+export type ReviewCycleFormValues = {
+    label: string;
+    startDate: Date;
+    endDate: Date | undefined;
+    maxPeersSelect: number | undefined;
+    requiredPeerReviewers: number | undefined;
+};
+
+type Props = {
+    initialValues?: ReviewCycleFormValues;
+    onCancel: () => void;
+    onSubmit: (values: ReviewCycleFormValues) => void;
+};
+
+export default function ReviewProcessSettings({ initialValues, onCancel, onSubmit, }: Props) {
+    const [label, setLabel] = useState<string>(initialValues?.label || "");
+    const [startDate, setStartDate] = useState<Date>(initialValues?.startDate || new Date());
+    const [endDate, setEndDate] = useState<Date | undefined>(initialValues?.endDate);
+    const [maxPeersSelect, setMaxPeersSelect] = useState<number | undefined>(initialValues?.maxPeersSelect);
+    const [requiredPeerReviewers, setRequiredPeerReviewers,] = useState<number | undefined>(initialValues?.requiredPeerReviewers);
+
+    useEffect(() => {
+        if (initialValues) {
+            setLabel(initialValues.label);
+            setStartDate(initialValues.startDate);
+            setEndDate(initialValues.endDate);
+            setMaxPeersSelect(initialValues.maxPeersSelect);
+            setRequiredPeerReviewers(initialValues.requiredPeerReviewers);
+        }
+    }, [initialValues]);
+
+    const isSaveDisabled = !label.trim() || !startDate;
+
+    const handleSave = () => {
+        const payload: ReviewCycleFormValues = {
+            label: label.trim(),
+            startDate,
+            endDate,
+            maxPeersSelect,
+            requiredPeerReviewers,
+        };
+        onSubmit(payload);
+    };
 
     return (
         <Card>
@@ -40,11 +79,14 @@ export function ReviewProcessSettings() {
 
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Left Column */}
                     <div className="space-y-6">
                         <div>
                             <Label htmlFor="review-period-label">Review Period Label</Label>
                             <Input
                                 id="review-period-label"
+                                value={label}
+                                onChange={(e) => setLabel(e.target.value)}
                                 placeholder="e.g., Q3 & Q4 2024"
                                 className="mt-1"
                             />
@@ -56,23 +98,36 @@ export function ReviewProcessSettings() {
                             <Input
                                 id="max-peers-select"
                                 type="number"
+                                value={maxPeersSelect ?? ""}
+                                onChange={(e) =>
+                                    setMaxPeersSelect(
+                                        e.target.value === "" ? undefined : Number(e.target.value)
+                                    )
+                                }
                                 placeholder="Leave empty for no limit"
                                 className="mt-1"
                             />
                         </div>
                         <div>
-                            <Label htmlFor="max-peers-reviewed-by">
-                                Max # Peers to be Reviewed By
+                            <Label htmlFor="required-peer-reviewers">
+                                Required Peer Reviewers
                             </Label>
                             <Input
-                                id="max-peers-reviewed-by"
+                                id="required-peer-reviewers"
                                 type="number"
-                                placeholder="Optional"
+                                value={requiredPeerReviewers ?? ""}
+                                onChange={(e) =>
+                                    setRequiredPeerReviewers(
+                                        e.target.value === "" ? undefined : Number(e.target.value)
+                                    )
+                                }
+                                placeholder="e.g., 3"
                                 className="mt-1"
                             />
                         </div>
                     </div>
 
+                    {/* Right Column */}
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -106,7 +161,6 @@ export function ReviewProcessSettings() {
                                     </PopoverContent>
                                 </Popover>
                             </div>
-
                             <div>
                                 <Label htmlFor="review-end-date">End Date</Label>
                                 <Popover>
@@ -116,7 +170,9 @@ export function ReviewProcessSettings() {
                                             variant="outline"
                                             className="mt-1 w-full justify-start"
                                         >
-                                            {endDate ? format(endDate, "yyyy-MM-dd") : "Select date"}
+                                            {endDate
+                                                ? format(endDate, "yyyy-MM-dd")
+                                                : "Select date"}
                                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                         </Button>
                                     </PopoverTrigger>
@@ -124,7 +180,7 @@ export function ReviewProcessSettings() {
                                         <Calendar
                                             mode="single"
                                             selected={endDate}
-                                            onSelect={(date) => setEndDate(date)}
+                                            onSelect={(date) => setEndDate(date || undefined)}
                                             disabled={(date) =>
                                                 startDate ? date < startDate : date < new Date()
                                             }
@@ -133,30 +189,20 @@ export function ReviewProcessSettings() {
                                 </Popover>
                             </div>
                         </div>
-
-                        <div>
-                            <Label htmlFor="required-peer-reviewers">
-                                Required Peer Reviewers
-                            </Label>
-                            <Input
-                                id="required-peer-reviewers"
-                                type="number"
-                                placeholder="3"
-                                className="mt-1"
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="max-reviewers-dept">
-                                Maximum Reviewers Per Department
-                            </Label>
-                            <Input
-                                id="max-reviewers-dept"
-                                type="number"
-                                placeholder="Optional"
-                                className="mt-1"
-                            />
-                        </div>
                     </div>
+                </div>
+
+                <div className="mt-6 flex justify-end space-x-4">
+                    <Button variant="ghost" onClick={onCancel}>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isSaveDisabled}
+                        variant='default'
+                    >
+                        Save
+                    </Button>
                 </div>
             </CardContent>
         </Card>

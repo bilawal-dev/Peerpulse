@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";            // ← Next.js way to grab route params
+import { useParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
@@ -27,6 +27,9 @@ export default function ReviewCyclePeerSelectionPage() {
     const [loading, setLoading] = useState(true);
     const [submissionMessage, setSubmissionMessage] = useState<string | null>(null);
 
+    // New state: whether this user has already selected peers for this cycle
+    const [alreadySelected, setAlreadySelected] = useState(false);
+
     // ─── Helper to group by department ───────────────────────────────────
     const groupByDepartment = (employees: Employee[]) => {
         return employees.reduce<Record<string, Employee[]>>((acc, emp) => {
@@ -39,7 +42,6 @@ export default function ReviewCyclePeerSelectionPage() {
 
     // ─── Extract reviewCycleId from URL via useParams() ────────────────
     const params = useParams();
-    // useParams() will give { reviewCycleId: "3" } when URL is …/peer-selection/3
     const reviewCycleId = params?.reviewCycleId || "";
 
     // ─── Fetch “employees by department” + “review cycle” from backend ──
@@ -71,37 +73,31 @@ export default function ReviewCyclePeerSelectionPage() {
                 }
 
                 const json = await res.json();
-                // Response shape:
-                // {
-                //   success: true,
-                //   status: 200,
-                //   message: "Employees fetched successfully",
-                //   data: {
-                //     employees_data: [ { department: "...", employees: [ {employee fields} ] }, … ],
-                //     review_cycle: { … }
-                //   }
-                // }
 
-                // 3️⃣ Pull out `review_cycle.max_peer_selection`
+                console.log("Fetched data:", json);
+
+                // Check if the backend indicates "already selected peers"
+                const isAlready = json.data.is_already_selected_peers === true;
+                if (isAlready) {
+                    setAlreadySelected(true);
+                    return;
+                }
+
+                // Otherwise, proceed to process employees_data and review_cycle
                 const { employees_data, review_cycle } = json.data;
 
-                // Set maxSelections exactly as returned:
+                // Set maxSelections exactly as returned
                 setMaxSelections(review_cycle.max_peer_selection);
 
-                // 4️⃣ Flatten “employees_data” into our Employee[] shape:
-                //    Each departmentObj has:
-                //      department: string
-                //      employees: [ { employee_id, name, email, … } ]
+                // Flatten “employees_data” into our Employee[] shape
                 const flatPeers: Employee[] = employees_data.flatMap((deptObj: any) =>
                     deptObj.employees.map((emp: any) => {
-                        // Split full “name” (e.g. "Amit Carpenter") → firstName / lastName:
                         const [first, ...rest] = emp.name.split(" ");
                         return {
                             code: emp.employee_id.toString(),
                             firstName: first,
                             lastName: rest.join(" ") || "",
                             department: deptObj.department,
-                            // managerCode is not returned here, so it stays undefined
                         };
                     })
                 );
@@ -116,7 +112,7 @@ export default function ReviewCyclePeerSelectionPage() {
         }
 
         fetchData();
-    }, [reviewCycleId]);
+    }, [reviewCycleId, user]);
 
     // ─── When the user toggles a checkbox ────────────────────────────────
     function togglePeerSelection(code: string) {
@@ -142,13 +138,44 @@ export default function ReviewCyclePeerSelectionPage() {
         }
 
         try {
-            // Replace this with your actual API‐call logic:
-            console.log("Submitting selected peers:", selectedPeers);
+            // 1️⃣ Grab your JWT from localStorage
+            const token = localStorage.getItem("elevu_auth");
+            if (!token) {
+                throw new Error("No auth token found. Please log in again.");
+            }
 
-            setSubmissionMessage(`Thank you! You selected ${selectedPeers.length} peers.`);
-            // Then you could disable further changes or redirect, etc.
-        } catch (error) {
-            toast.error("Error submitting selections");
+            // 2️⃣ Convert selectedPeers (string[]) to numbers[]
+            const employeeIds = selectedPeers.map((code) => parseInt(code, 10));
+
+            // 3️⃣ POST to /employee/select-peer-list/{reviewCycleId}
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_SERVER_URL}/employee/select-peer-list/${reviewCycleId}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ employee_ids: employeeIds }),
+                }
+            );
+
+            if (!res.ok) {
+                // If backend returns an error (400/500), show toast
+                const errorData = await res.json().catch(() => ({}));
+                const msg =
+                    errorData?.message ||
+                    `Failed to submit selections (status ${res.status})`;
+                throw new Error(msg);
+            }
+
+            // 4️⃣ On success, show the “Selection Submitted!” UI
+            setSubmissionMessage(
+                `Thank you! You selected ${selectedPeers.length} peers.`
+            );
+        } catch (err: any) {
+            console.error("Error submitting selections:", err);
+            toast.error(err.message || "Error submitting selections");
         }
     }
 
@@ -158,6 +185,20 @@ export default function ReviewCyclePeerSelectionPage() {
     // ─── Loading Skeleton ────────────────────────────────────────────────
     if (loading) {
         return <PeerSelectionSkeleton />;
+    }
+
+    // ─── If the user has already selected peers, show a special message ──
+    if (alreadySelected) {
+        return (
+            <Card className="p-8">
+                <h2 className="text-lg font-semibold mb-2">
+                    Hello, {employeeName}.
+                </h2>
+                <p className="text-gray-700">
+                    You have already selected your peers for this review cycle.
+                </p>
+            </Card>
+        );
     }
 
     // ─── After Submit (Success) ──────────────────────────────────────────
@@ -171,7 +212,11 @@ export default function ReviewCyclePeerSelectionPage() {
                 <ul className="mt-6 list-disc list-inside">
                     {selectedPeers.map((code) => {
                         const peer = availablePeers.find((p) => p.code === code);
-                        return <li key={code}>{peer ? `${peer.firstName} ${peer.lastName}` : code}</li>;
+                        return (
+                            <li key={code}>
+                                {peer ? `${peer.firstName} ${peer.lastName}` : code}
+                            </li>
+                        );
                     })}
                 </ul>
             </Card>
@@ -189,7 +234,8 @@ export default function ReviewCyclePeerSelectionPage() {
             </header>
 
             <p className="mb-6 text-gray-700">
-                Please select up to {maxSelections} colleagues you would like to review your performance.
+                Please select up to {maxSelections} colleagues you would like to review
+                your performance.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 py-4">

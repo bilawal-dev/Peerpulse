@@ -473,6 +473,7 @@ export default function EmployeesPage() {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="Initial Upload">Initial Upload</SelectItem>
+                <SelectItem value="Invited">Invited</SelectItem>
                 <SelectItem value="Peer Selected">Peer Selected</SelectItem>
                 <SelectItem value="Review Given">Review Given</SelectItem>
               </SelectContent>
@@ -684,9 +685,8 @@ export default function EmployeesPage() {
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Initial Upload">
-                      Initial Upload
-                    </SelectItem>
+                    <SelectItem value="Initial Upload">Initial Upload </SelectItem>
+                    <SelectItem value="Invited">Invited </SelectItem>
                     <SelectItem value="Peer Selected">Peer Selected</SelectItem>
                     <SelectItem value="Review Given">Review Given</SelectItem>
                   </SelectContent>

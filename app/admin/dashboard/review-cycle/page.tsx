@@ -129,7 +129,6 @@ export default function DashboardReviewCyclePage() {
                     name: values.label,
                     start_date: values.startDate.toISOString(),
                     end_date: values.endDate?.toISOString() || values.startDate.toISOString(),
-                    reminder_gap_days: 0, // default
                     max_peer_selection: values.maxPeersSelect ?? 0,
                     max_reviews_allowed: values.requiredPeerReviewers ?? 0,
                 };

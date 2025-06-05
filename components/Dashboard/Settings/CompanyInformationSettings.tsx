@@ -48,29 +48,21 @@ export function CompanyInformationSettings() {
                 if (!res.ok) throw new Error("Failed to fetch company profile");
 
                 const json = await res.json();
-                // json.data is the company object returned by getProfile
                 const company = json.data;
 
-                console.log(json);
+                console.log("Fetched company profile:", company);
 
                 // Populate “current” fields
                 setCompanyName(company.name || "");
-                setCompanyDescription(company.description || ""); // backend does not return description
+                setCompanyDescription(company.description || "");
                 setMobileNumber(company.mobile_number || "");
-
-                let fetchedLogoUrl = "";
-                if (company.company_logo && company.company_logo.startsWith("http")) {
-                    fetchedLogoUrl = company.company_logo;
-                } else if (company.company_logo) {
-                    fetchedLogoUrl = `${process.env.NEXT_PUBLIC_SERVER_URL}${company.company_logo}`;
-                }
-                setLogoUrl(fetchedLogoUrl);
+                setLogoUrl(company.company_logo || "");
 
                 // Also set “original” references
                 setOriginalName(company.name || "");
-                setOriginalDescription("");
+                setOriginalDescription(company.description || "");
                 setOriginalMobile(company.mobile_number || "");
-                setOriginalLogoUrl(fetchedLogoUrl);
+                setOriginalLogoUrl(company.company_logo || "");
 
                 // Clear any file selection
                 setLogoFile(null);
@@ -94,11 +86,25 @@ export function CompanyInformationSettings() {
         };
     }, [logoFile]);
 
+    // ─── Updated onFileChange to reject non‐PNG files ─────────────────────────────
     const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files?.[0]) {
-            setLogoFile(e.target.files[0]);
-            setLogoUrl(""); // clear any existing URL so preview uses new file
+        const file = e.target.files?.[0];
+        if (!file) {
+            return;
         }
+
+        // If the file’s MIME type is not image/png, reject it
+        if (file.type !== "image/png") {
+            alert("Please upload a PNG file only.");
+            // Clear the input so the user can try again
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+            return;
+        }
+
+        setLogoFile(file);
+        setLogoUrl(""); // clear any existing URL so preview uses new file
     };
 
     const removeLogo = () => {
@@ -252,7 +258,7 @@ export function CompanyInformationSettings() {
                             />
                         </div>
 
-                        {/* Logo field */}
+                        {/* Logo field (only PNGs allowed) */}
                         <div>
                             <Label>Company Logo</Label>
                             <div className="mt-1">
@@ -261,7 +267,7 @@ export function CompanyInformationSettings() {
                                         <img
                                             src={previewSrc}
                                             alt="Logo preview"
-                                            className="w-32 h-32 object-cover rounded-md border border-gray-200"
+                                            className="w-72 h-72 object-contain rounded-md border border-gray-200"
                                         />
                                         <button
                                             type="button"
@@ -281,14 +287,14 @@ export function CompanyInformationSettings() {
                                             ref={fileInputRef}
                                             id="company-logo-file"
                                             type="file"
-                                            accept="image/*"
+                                            accept="image/png"
                                             onChange={onFileChange}
                                             className="absolute inset-0 w-full h-full hidden cursor-pointer"
                                         />
-                                        <div className="w-32 h-32 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md">
+                                        <div className="w-72 h-72 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md">
                                             <UploadCloud className="h-6 w-6 text-gray-400" />
                                             <span className="text-xs text-gray-500 mt-1">
-                                                Upload Logo
+                                                Upload Logo (PNG only)
                                             </span>
                                         </div>
                                     </label>

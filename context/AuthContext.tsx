@@ -41,7 +41,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (response.ok) {
-            const data = await response.json();
+            const data = await response.json()
+            console.log("Token verified:", data);
             setUser(data.data);
           } else {
             if (response.status === 401) {

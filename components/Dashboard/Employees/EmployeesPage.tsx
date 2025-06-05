@@ -42,14 +42,12 @@ type FetchedEmployee = {
   name: string;
   email: string;
   department: string;
+  status: string;
   // other fields exist, but we only care about manager.email for now:
   manager: {
-    employee_id: number;
-    name: string | null;
     email: string;
     // the rest of the manager fields are omitted for brevity
   } | null;
-  // NOTE: no “status” comes back yet—backend dev will add it later.
 };
 
 //
@@ -60,7 +58,6 @@ type Employee = {
   name: string;
   email: string;
   department: string;
-  code?: string;
   status?: string;
   managerEmail?: string;
 };
@@ -69,7 +66,6 @@ const initialEmployeeState: Employee = {
   name: "",
   email: "",
   department: "",
-  code: "",
   status: "initial",
   managerEmail: "",
 };
@@ -229,27 +225,51 @@ export default function EmployeesPage() {
   };
 
   //
-  // 4) Local “Add Employee” (UI-only; does not hit the server)
+  // 4) Add Employee → POST to /company/single-add-employee, then re-fetch
   //
-  const handleAdd = () => {
-    // We can either stub a new FetchedEmployee or push a placeholder.
-    // For now, we’ll push a minimal object so the row shows up until backend is implemented.
-    const temp: any = {
-      employee_id: Date.now(), // placeholder
-      name: newEmp.name,
-      email: newEmp.email,
-      department: newEmp.department,
-      manager: newEmp.managerEmail
-        ? { employee_id: 0, name: null, email: newEmp.managerEmail }
-        : null,
-    };
-    setEmployees((prev) => [...prev, temp]);
-    setAddOpen(false);
-    setNewEmp(initialEmployeeState);
+  const handleAdd = async () => {
+    try {
+      const token = localStorage.getItem("elevu_auth");
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/single-add-employee`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: newEmp.name,
+            email: newEmp.email,
+            department: newEmp.department,
+            manager_email: newEmp.managerEmail, // snake_case per your API
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(
+          `POST /company/single-add-employee responded with ${response.status}: ${text}`
+        );
+      }
+
+      // After a successful add, re-fetch the full employee list
+      await fetchEmployees();
+
+      // Close dialog & reset form
+      setAddOpen(false);
+      setNewEmp(initialEmployeeState);
+    } catch (error: any) {
+      console.error("Error adding employee:", error);
+      alert(
+        "Could not add employee:\n" + (error.message || "Unknown server error")
+      );
+    }
   };
 
   //
-  // 5) Local “Edit Employee” (UI-only; does not hit the server)
+  // 5) Edit Employee → PUT to /company/update-employee, then re-fetch
   //
   const onEditClick = (index: number) => {
     setEditIndex(index);
@@ -265,46 +285,170 @@ export default function EmployeesPage() {
     setEditOpen(true);
   };
 
-  const handleEditSave = () => {
+  const handleEditSave = async () => {
     if (editIndex === null) return;
-    setEmployees((prev) =>
-      prev.map((emp, i) =>
-        i === editIndex
-          ? {
-            ...emp,
+
+    try {
+      const token = localStorage.getItem("elevu_auth");
+      const targetEmp = employees[editIndex];
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-employee`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            employee_id: targetEmp.employee_id,
             name: editEmp.name,
-            email: editEmp.email,
             department: editEmp.department,
-            manager: editEmp.managerEmail
-              ? { employee_id: 0, name: null, email: editEmp.managerEmail }
-              : null,
-            // status is not yet returned by the backend
-          }
-          : emp
-      )
-    );
-    setEditOpen(false);
-    setEditIndex(null);
-    setEditEmp(initialEmployeeState);
+            status: editEmp.status,
+            manager_email: editEmp.managerEmail ? editEmp.managerEmail : null,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(
+          `PUT /company/update-employee responded with ${response.status}: ${text}`
+        );
+      }
+
+      // After a successful update, re-fetch the full employee list
+      await fetchEmployees();
+
+      // Close dialog & reset edit state
+      setEditOpen(false);
+      setEditIndex(null);
+      setEditEmp(initialEmployeeState);
+    } catch (error: any) {
+      console.error("Error updating employee:", error);
+      alert(
+        "Could not update employee:\n" + (error.message || "Unknown server error")
+      );
+    }
   };
 
   //
-  // 6) Local “Delete Employee” (UI-only; does not hit the server)
+  // 6) Delete Employee → DELETE to /company/delete-employee, then re-fetch
   //
   const onDeleteClick = (index: number) => {
     setDeleteIndex(index);
     setDeleteOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteIndex === null) return;
-    setEmployees((prev) => prev.filter((_, i) => i !== deleteIndex));
-    setDeleteOpen(false);
-    setDeleteIndex(null);
+
+    try {
+      const token = localStorage.getItem("elevu_auth");
+      const targetEmp = employees[deleteIndex];
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/delete-employee`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            employee_id: targetEmp.employee_id,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(
+          `DELETE /company/delete-employee responded with ${response.status}: ${text}`
+        );
+      }
+
+      // After a successful delete, re-fetch the full employee list
+      await fetchEmployees();
+
+      // Close dialog & reset delete state
+      setDeleteOpen(false);
+      setDeleteIndex(null);
+    } catch (error: any) {
+      console.error("Error deleting employee:", error);
+      alert(
+        "Could not delete employee:\n" + (error.message || "Unknown server error")
+      );
+    }
   };
 
   //
-  // 7) Filtering logic (for now, since backend doesn’t supply `status`, this will show all
+  // 7) Invite a single employee → POST to /company/invite-employee, no re-fetch needed
+  //
+  const handleInvite = async (employeeId: number) => {
+    try {
+      const token = localStorage.getItem("elevu_auth");
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/invite-employee`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ employee_id: employeeId }),
+        }
+      );
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(
+          `POST /company/invite-employee responded with ${response.status}: ${text}`
+        );
+      }
+      alert("Invitation sent to employee successfully.");
+    } catch (error: any) {
+      console.error("Error inviting employee:", error);
+      alert(
+        "There was a problem sending the invitation:\n" +
+        (error.message || "Unknown server error")
+      );
+    }
+  };
+
+  //
+  // 8) Invite all employees → POST to /company/invite-all-employee, no re-fetch needed
+  //
+  const handleInviteAll = async () => {
+    try {
+      const token = localStorage.getItem("elevu_auth");
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/invite-all-employee`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(
+          `POST /company/invite-all-employee responded with ${response.status}: ${text}`
+        );
+      }
+      alert("Invitations sent to all employees successfully.");
+    } catch (error: any) {
+      console.error("Error inviting all employees:", error);
+      alert(
+        "There was a problem sending invitations to all employees:\n" +
+        (error.message || "Unknown server error")
+      );
+    }
+  };
+
+  //
+  // 9) Filtering logic (for now, since backend doesn’t supply `status`, this will show all
   //    when “All Status” is selected; any other status choice yields an empty list until your
   //    backend populates employee.status.)
   //
@@ -339,7 +483,6 @@ export default function EmployeesPage() {
           </div>
 
           <div className="flex items-center space-x-2">
-
             <TooltipProvider delayDuration={100}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -357,11 +500,17 @@ export default function EmployeesPage() {
               </Tooltip>
             </TooltipProvider>
 
-            <Button onClick={() => alert("INVITE ALL EMPLOYEES VIA EMAIL")} className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              onClick={handleInviteAll}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               Invite All Employees
             </Button>
 
-            <Button onClick={() => fileInputRef.current?.click()} className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               Upload Employees
             </Button>
             <input
@@ -401,30 +550,6 @@ export default function EmployeesPage() {
                       />
                     </div>
                   ))}
-                  <div className="space-y-1">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={newEmp.status}
-                      onValueChange={(val) =>
-                        setNewEmp((s) => ({ ...s, status: val }))
-                      }
-                    >
-                      <SelectTrigger id="status" className="w-full">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Initial Upload">
-                          Initial Upload
-                        </SelectItem>
-                        <SelectItem value="Peer Selected">
-                          Peer Selected
-                        </SelectItem>
-                        <SelectItem value="Review Given">
-                          Review Given
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
                 <DialogFooter className="mt-6 flex justify-end space-x-2">
                   <Button variant="outline" onClick={() => setAddOpen(false)}>
@@ -498,7 +623,7 @@ export default function EmployeesPage() {
                     <button onClick={() => onEditClick(idx)}>
                       <Edit2 className="h-5 w-5 text-blue-500 hover:text-blue-700" />
                     </button>
-                    <button onClick={() => alert("SEND EMAIL TO EMPLOYEE")}>
+                    <button onClick={() => handleInvite(emp.employee_id)}>
                       <MailPlus className="h-5 w-5 text-blue-500 hover:text-blue-700" />
                     </button>
                     <button onClick={() => onDeleteClick(idx)}>
@@ -533,7 +658,6 @@ export default function EmployeesPage() {
             <div className="space-y-4 mt-4">
               {[
                 { label: "Name", key: "name" },
-                { label: "Email", key: "email" },
                 { label: "Department", key: "department" },
                 { label: "Manager Email", key: "managerEmail" },
               ].map(({ label, key }) => (
@@ -583,11 +707,11 @@ export default function EmployeesPage() {
           <DialogTrigger asChild>
             <div hidden />
           </DialogTrigger>
-          <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 max-w-sm mx-auto">
+          <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 max-w-sm min-w-fit mx-auto">
             <DialogHeader>
               <DialogTitle>Confirm Deletion</DialogTitle>
             </DialogHeader>
-            <p className="mt-4">
+            <p className="mt-4 whitespace-nowrap">
               Are you sure you want to delete{" "}
               <strong>
                 {deleteIndex !== null ? employees[deleteIndex].name : ""}

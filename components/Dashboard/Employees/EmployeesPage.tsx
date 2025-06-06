@@ -464,7 +464,7 @@ export default function EmployeesPage() {
 
       <CardContent className="space-y-4">
         {/* Controls */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col xl:flex-row justify-between xl:items-center mb-6 gap-5 xl:gap-0">
           <div className="flex items-center space-x-4">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]">
@@ -501,19 +501,14 @@ export default function EmployeesPage() {
               </Tooltip>
             </TooltipProvider>
 
-            <Button
-              onClick={handleInviteAll}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
+            <Button onClick={handleInviteAll} className="bg-blue-600 hover:bg-blue-700"            >
               Invite All Employees
             </Button>
 
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
+            <Button onClick={() => fileInputRef.current?.click()} className="bg-blue-600 hover:bg-blue-700"            >
               Upload Employees
             </Button>
+
             <input
               ref={fileInputRef}
               type="file"
@@ -564,7 +559,7 @@ export default function EmployeesPage() {
         </div>
 
         {/* Table */}
-        <div>
+        <div className="overflow-y-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="sticky top-0 bg-gray-50 z-10">
               <tr>
@@ -572,8 +567,8 @@ export default function EmployeesPage() {
                   "Name",
                   "Email",
                   "Department",
-                  "Peer Selection",
-                  "Review",
+                  // "Peer Selection",
+                  // "Review",
                   "Status",
                   "Manager Email",
                   "Actions",
@@ -595,7 +590,7 @@ export default function EmployeesPage() {
                   <td className="px-4 py-3 whitespace-nowrap">
                     {emp.department}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  {/* <td className="px-4 py-3 whitespace-nowrap">
                     <a
                       href={`/employee/dashboard/peer-selection`}
                       target="_blank"
@@ -603,8 +598,8 @@ export default function EmployeesPage() {
                     >
                       Selection Link
                     </a>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  </td> */}
+                  {/* <td className="px-4 py-3 whitespace-nowrap">
                     <a
                       href={`/employee/dashboard/review-form`}
                       target="_blank"
@@ -612,7 +607,7 @@ export default function EmployeesPage() {
                     >
                       Review Link
                     </a>
-                  </td>
+                  </td> */}
                   <td className="px-4 py-3 whitespace-nowrap capitalize">
                     {/* No status yet from backend → show "-" */}
                     {(emp as any).status || "-"}

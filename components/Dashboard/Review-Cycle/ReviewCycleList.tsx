@@ -1,8 +1,8 @@
-// components/Dashboard/Settings/ReviewCycleList.tsx
 import React from "react";
 import { format } from "date-fns";
 import { Trash2, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 type ReviewCycle = {
     id: string;
@@ -19,42 +19,35 @@ interface ReviewCycleListProps {
     onDelete: (id: string) => void;
 }
 
-export default function ReviewCycleList({ cycles, onEdit, onDelete, }: ReviewCycleListProps) {
+export default function ReviewCycleList({ cycles, onEdit, onDelete }: ReviewCycleListProps) {
     if (cycles.length === 0) {
         return <p>No review cycles found. Create one to get started.</p>;
     }
 
     return (
-        <table className="min-w-full border-collapse">
-            <thead>
-                <tr className="bg-gray-10 text-left">
-                    <th className="px-4 py-2 border">Label</th>
-                    <th className="px-4 py-2 border">Start Date</th>
-                    <th className="px-4 py-2 border">End Date</th>
-                    <th className="px-4 py-2 border">Max Peers Select</th>
-                    <th className="px-4 py-2 border">Required Reviewers</th>
-                    <th className="px-4 py-2 border text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {cycles.map((cycle) => (
-                    <tr key={cycle.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-2 border">{cycle.label}</td>
-                        <td className="px-4 py-2 border">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {cycles.map((cycle) => (
+                <Card key={cycle.id} className="flex flex-col justify-between">
+                    <CardHeader>
+                        <CardTitle className="text-lg font-semibold">{cycle.label}</CardTitle>
+                        <p className="text-sm text-muted-foreground">
                             {format(new Date(cycle.startDate), "yyyy-MM-dd")}
-                        </td>
-                        <td className="px-4 py-2 border">
-                            {cycle.endDate
-                                ? format(new Date(cycle.endDate), "yyyy-MM-dd")
-                                : "-"}
-                        </td>
-                        <td className="px-4 py-2 border">
+                            {" → "}
+                            {cycle.endDate ? format(new Date(cycle.endDate), "yyyy-MM-dd") : "-"}
+                        </p>
+                    </CardHeader>
+
+                    <CardContent className="space-y-2 text-sm">
+                        <div>
+                            <strong>Max Peers Select:</strong>{" "}
                             {cycle.maxPeersSelect ?? "-"}
-                        </td>
-                        <td className="px-4 py-2 border">
+                        </div>
+                        <div>
+                            <strong>Required Reviewers:</strong>{" "}
                             {cycle.requiredPeerReviewers ?? "-"}
-                        </td>
-                        <td className="px-4 py-2 border text-right">
+                        </div>
+
+                        <div className="mt-4 flex justify-end space-x-2">
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -69,10 +62,10 @@ export default function ReviewCycleList({ cycles, onEdit, onDelete, }: ReviewCyc
                             >
                                 <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
-                        </td>
-                    </tr>
-                ))}
-            </tbody>
-        </table>
+                        </div>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
     );
 }

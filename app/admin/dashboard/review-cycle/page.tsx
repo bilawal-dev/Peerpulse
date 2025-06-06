@@ -1,11 +1,13 @@
-// pages/admin/dashboard/review-cycle.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import ReviewCycleList from "@/components/Dashboard/Review-Cycle/ReviewCycleList";
-import ReviewProcessSettings, { ReviewCycleFormValues } from "@/components/Dashboard/Review-Cycle/ReviewProcessSettings";
+import ReviewProcessSettings, {
+    ReviewCycleFormValues,
+} from "@/components/Dashboard/Review-Cycle/ReviewProcessSettings";
 
 type ReviewCycle = {
     id: string;
@@ -74,8 +76,7 @@ export default function DashboardReviewCyclePage() {
 
     // 4️⃣ Handle delete
     const handleDelete = async (cycleId: string) => {
-        if (!confirm("Are you sure you want to delete this review cycle?"))
-            return;
+        if (!confirm("Are you sure you want to delete this review cycle?")) return;
         try {
             const token = localStorage.getItem("elevu_auth");
             const res = await fetch(`${BASE_URL}/company/delete-review-cycle`, {
@@ -105,8 +106,7 @@ export default function DashboardReviewCyclePage() {
                     review_cycle_id: Number(cycleId),
                 };
                 if (values.label) payload.name = values.label;
-                if (values.startDate)
-                    payload.start_date = values.startDate.toISOString();
+                if (values.startDate) payload.start_date = values.startDate.toISOString();
                 if (values.endDate) payload.end_date = values.endDate.toISOString();
                 if (values.maxPeersSelect !== undefined)
                     payload.max_peer_selection = values.maxPeersSelect;
@@ -128,27 +128,27 @@ export default function DashboardReviewCyclePage() {
                 const payload = {
                     name: values.label,
                     start_date: values.startDate.toISOString(),
-                    end_date: values.endDate?.toISOString() || values.startDate.toISOString(),
+                    end_date:
+                        values.endDate?.toISOString() || values.startDate.toISOString(),
                     max_peer_selection: values.maxPeersSelect ?? 0,
                     max_reviews_allowed: values.requiredPeerReviewers ?? 0,
                 };
-                const res = await fetch(
-                    `${BASE_URL}/company/add-review-cycle`,
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                        },
-                        body: JSON.stringify(payload),
-                    }
-                );
+                const res = await fetch(`${BASE_URL}/company/add-review-cycle`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
                 if (!res.ok) throw new Error("Failed to create review cycle");
             }
 
+
+            setShowForm(false);
+
             // After create or update, re-fetch entire list
             await fetchAllCycles();
-            setShowForm(false);
             setEditingCycle(null);
         } catch (error) {
             console.error("Form submit error:", error);
@@ -158,58 +158,59 @@ export default function DashboardReviewCyclePage() {
 
     return (
         <div className="space-y-8 pb-8">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold">Review Cycles</h2>
-                <Button
-                    onClick={handleCreateNew}
-                    variant="default"
-                    className="flex items-center bg-blue-600 hover:bg-blue-700 transition"
-                >
-                    <PlusCircle className="mr-2 h-5 w-5" />
-                    Create New Cycle
-                </Button>
-            </div>
+            <Card>
+                <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h2 className="text-2xl font-semibold">Review Cycles</h2>
+                    <Button
+                        onClick={handleCreateNew}
+                        variant="default"
+                        className="flex items-center max-md:w-52 bg-blue-600 hover:bg-blue-700 transition"
+                    >
+                        <PlusCircle className="mr-2 h-5 w-5" />
+                        Create New Cycle
+                    </Button>
+                </CardHeader>
 
-            {isLoading ? (
-                <p>Loading review cycles...</p>
-            ) : (
-                <ReviewCycleList
-                    cycles={cycles}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                />
-            )}
+                <CardContent>
+                    {isLoading ? (
+                        <p>Loading review cycles...</p>
+                    ) : (
+                        <ReviewCycleList
+                            cycles={cycles}
+                            onEdit={handleEdit}
+                            onDelete={handleDelete}
+                        />
+                    )}
 
-            {showForm && (
-                <div className="mt-8">
-                    <h3 className="text-xl font-medium mb-4">
-                        {editingCycle ? "Edit Review Cycle" : "Create New Review Cycle"}
-                    </h3>
-                    <ReviewProcessSettings
-                        initialValues={
-                            editingCycle
-                                ? {
-                                    label: editingCycle.label,
-                                    startDate: new Date(editingCycle.startDate),
-                                    endDate: editingCycle.endDate
-                                        ? new Date(editingCycle.endDate)
-                                        : undefined,
-                                    maxPeersSelect: editingCycle.maxPeersSelect ?? undefined,
-                                    requiredPeerReviewers:
-                                        editingCycle.requiredPeerReviewers ?? undefined,
+                    {showForm && (
+                        <div className="mt-8">
+                            <h3 className="text-xl font-medium mb-4">
+                                {editingCycle
+                                    ? "Edit Review Cycle"
+                                    : "Create New Review Cycle"}
+                            </h3>
+                            <ReviewProcessSettings
+                                initialValues={
+                                    editingCycle
+                                        ? {
+                                            label: editingCycle.label,
+                                            startDate: new Date(editingCycle.startDate),
+                                            endDate: editingCycle.endDate ? new Date(editingCycle.endDate) : undefined,
+                                            maxPeersSelect: editingCycle.maxPeersSelect ?? undefined,
+                                            requiredPeerReviewers: editingCycle.requiredPeerReviewers ?? undefined,
+                                        }
+                                        : undefined
                                 }
-                                : undefined
-                        }
-                        onCancel={() => {
-                            setShowForm(false);
-                            setEditingCycle(null);
-                        }}
-                        onSubmit={(vals) =>
-                            handleFormSubmit(vals, editingCycle?.id)
-                        }
-                    />
-                </div>
-            )}
+                                onCancel={() => {
+                                    setShowForm(false);
+                                    setEditingCycle(null);
+                                }}
+                                onSubmit={(vals) => handleFormSubmit(vals, editingCycle?.id)}
+                            />
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }

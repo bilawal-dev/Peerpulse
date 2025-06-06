@@ -42,13 +42,22 @@ export default function ReviewProcessSettings({ initialValues, onCancel, onSubmi
     const [maxPeersSelect, setMaxPeersSelect] = useState<number | undefined>(initialValues?.maxPeersSelect);
     const [requiredPeerReviewers, setRequiredPeerReviewers,] = useState<number | undefined>(initialValues?.requiredPeerReviewers);
 
+    // ─── Whenever initialValues changes, copy its values or reset to defaults ───
     useEffect(() => {
         if (initialValues) {
+            // “Edit” mode: populate with existing data
             setLabel(initialValues.label);
             setStartDate(initialValues.startDate);
             setEndDate(initialValues.endDate);
             setMaxPeersSelect(initialValues.maxPeersSelect);
             setRequiredPeerReviewers(initialValues.requiredPeerReviewers);
+        } else {
+            // “Create New” mode: clear everything to defaults
+            setLabel("");
+            setStartDate(new Date());
+            setEndDate(undefined);
+            setMaxPeersSelect(undefined);
+            setRequiredPeerReviewers(undefined);
         }
     }, [initialValues]);
 

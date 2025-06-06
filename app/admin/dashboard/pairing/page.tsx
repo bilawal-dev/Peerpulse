@@ -161,13 +161,7 @@ export default function DashboardPairingPage() {
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
-                        className={`
-              flex items-center justify-between
-              bg-white border border-gray-200 rounded-md
-              px-3 py-2 mb-2 transition
-              ${snapshot.isDragging ? "opacity-50" : ""}
-            `}
-                    >
+                        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0  bg-white border border-gray-200 rounded-md px-3 py-2 mb-2 transition ${snapshot.isDragging ? "opacity-50" : ""}            `}                    >
                         <div className="flex-1 text-gray-800 font-medium">
                             {emp.firstName} {emp.lastName}
                         </div>
@@ -195,12 +189,8 @@ export default function DashboardPairingPage() {
         if (!emp) return null
 
         return (
-            <div className="
-          flex items-center justify-between
-          bg-white border border-gray-200 rounded-md
-          px-3 py-2 mb-2
-        ">
-                <div className="flex-1 text-gray-800 font-medium">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 justify-between bg-white border border-gray-200 rounded-md px-3 py-2 mb-2">
+                <div className="sm:flex-1 text-gray-800 font-medium">
                     {emp.firstName} {emp.lastName}
                 </div>
                 <div className="flex items-center space-x-2 text-gray-500 text-xs">
@@ -272,9 +262,9 @@ export default function DashboardPairingPage() {
                 </div>
 
                 {/* Body */}
-                <div className="flex gap-6 p-6 min-h-[600px]">
+                <div className="flex flex-wrap overflow-y-auto gap-6 p-6">
                     {/* Left: Employee List */}
-                    <div className="flex flex-col w-80">
+                    <div className="flex flex-col w-full md:w-80 ">
                         <select
                             className="mb-4 p-2 border border-gray-200 rounded-md bg-white text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                             onChange={() => {
@@ -288,12 +278,7 @@ export default function DashboardPairingPage() {
 
                         <div className="flex-1 overflow-y-auto border border-gray-200 rounded-md">
                             {allEmps.map((emp) => (
-                                <div
-                                    key={emp.code}
-                                    className={`flex justify-between items-center px-4 py-3 cursor-pointer ${currentCode === emp.code ? "bg-blue-50" : "hover:bg-gray-50"
-                                        }`}
-                                    onClick={() => setCurrentCode(emp.code)}
-                                >
+                                <div key={emp.code} className={`flex flex-col sm:flex-row justify-between sm:items-center gap-2 sm:gap-0 px-4 py-3 cursor-pointer ${currentCode === emp.code ? "bg-blue-50" : "hover:bg-gray-50"}`} onClick={() => setCurrentCode(emp.code)}>
                                     <div className="font-medium text-gray-800">
                                         {emp.firstName} {emp.lastName}
                                     </div>
@@ -337,10 +322,7 @@ export default function DashboardPairingPage() {
                                                         <div
                                                             ref={provided.innerRef}
                                                             {...provided.droppableProps}
-                                                            className={`
-                                min-h-[180px] p-3 bg-gray-50 border border-gray-200 rounded-md
-                                ${snapshot.isDraggingOver ? "bg-blue-50 border-blue-300 shadow-inner" : ""}
-                              `}
+                                                            className={`min-h-[180px] p-3 bg-gray-50 border border-gray-200 rounded-md ${snapshot.isDraggingOver ? "bg-blue-50 border-blue-300 shadow-inner" : ""}`}
                                                         >
                                                             {zones.suggested.map((code, idx) => (
                                                                 <ReviewerChip
@@ -392,7 +374,7 @@ export default function DashboardPairingPage() {
                                         <h4 className="text-xl font-semibold text-gray-800 mb-4">
                                             Option Pool
                                         </h4>
-                                        <div className="grid grid-cols-3 gap-6">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
                                             {/* Selected (peerSelections) */}
                                             <div>
                                                 <h5 className="text-md font-medium text-gray-700 mb-2">

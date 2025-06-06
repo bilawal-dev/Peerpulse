@@ -13,6 +13,7 @@ type Employee = {
     firstName: string;
     lastName: string;
     department: string;
+    isSelected: boolean;             // <-- added this
     managerCode?: string;
 };
 
@@ -57,31 +58,24 @@ export default function ReviewCyclePeerSelectionPage() {
                 }
 
                 // 2️⃣ Call the get-employee-by-department endpoint
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-employee-by-department/${reviewCycleId}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-employee-by-department/${reviewCycleId}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
 
                 if (!res.ok) {
                     throw new Error(`Failed to fetch employees (status ${res.status})`);
                 }
 
                 const json = await res.json();
-
                 console.log("Fetched data:", json);
 
                 // Check if the backend indicates "already selected peers"
                 const isAlready = json.data.is_already_selected_peers === true;
-                if (isAlready) {
-                    setAlreadySelected(true);
-                    return;
-                }
+                setAlreadySelected(isAlready);
 
                 // Otherwise, proceed to process employees_data and review_cycle
                 const { employees_data, review_cycle } = json.data;
@@ -89,7 +83,7 @@ export default function ReviewCyclePeerSelectionPage() {
                 // Set maxSelections exactly as returned
                 setMaxSelections(review_cycle.max_peer_selection);
 
-                // Flatten “employees_data” into our Employee[] shape
+                // Flatten “employees_data” into our Employee[] shape, including is_selected
                 const flatPeers: Employee[] = employees_data.flatMap((deptObj: any) =>
                     deptObj.employees.map((emp: any) => {
                         const [first, ...rest] = emp.name.split(" ");
@@ -98,11 +92,20 @@ export default function ReviewCyclePeerSelectionPage() {
                             firstName: first,
                             lastName: rest.join(" ") || "",
                             department: deptObj.department,
+                            isSelected: emp.is_selected,                     // <–– track it here
                         };
                     })
                 );
 
                 setAvailablePeers(flatPeers);
+
+                // If the user already selected peers in a previous session, pre-fill selectedPeers
+                if (isAlready) {
+                    const previouslySelectedCodes = flatPeers
+                        .filter((p) => p.isSelected)
+                        .map((p) => p.code);
+                    setSelectedPeers(previouslySelectedCodes);
+                }
             } catch (err: any) {
                 console.error("Error loading data:", err);
                 toast.error(err.message || "Something went wrong.");
@@ -116,6 +119,11 @@ export default function ReviewCyclePeerSelectionPage() {
 
     // ─── When the user toggles a checkbox ────────────────────────────────
     function togglePeerSelection(code: string) {
+        if (alreadySelected) {
+            // if already selected once, do nothing—inputs are disabled anyway
+            return;
+        }
+
         if (selectedPeers.includes(code)) {
             setSelectedPeers(selectedPeers.filter((c) => c !== code));
         } else {
@@ -148,20 +156,16 @@ export default function ReviewCyclePeerSelectionPage() {
             const employeeIds = selectedPeers.map((code) => parseInt(code, 10));
 
             // 3️⃣ POST to /employee/select-peer-list/{reviewCycleId}
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_SERVER_URL}/employee/select-peer-list/${reviewCycleId}`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({ employee_ids: employeeIds }),
-                }
-            );
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/select-peer-list/${reviewCycleId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ employee_ids: employeeIds }),
+            });
 
             if (!res.ok) {
-                // If backend returns an error (400/500), show toast
                 const errorData = await res.json().catch(() => ({}));
                 const msg =
                     errorData?.message ||
@@ -187,20 +191,6 @@ export default function ReviewCyclePeerSelectionPage() {
         return <PeerSelectionSkeleton />;
     }
 
-    // ─── If the user has already selected peers, show a special message ──
-    if (alreadySelected) {
-        return (
-            <Card className="p-8">
-                <h2 className="text-lg font-semibold mb-2">
-                    Hello, {employeeName}.
-                </h2>
-                <p className="text-gray-700">
-                    You have already selected your peers for this review cycle.
-                </p>
-            </Card>
-        );
-    }
-
     // ─── After Submit (Success) ──────────────────────────────────────────
     if (submissionMessage) {
         return (
@@ -223,7 +213,7 @@ export default function ReviewCyclePeerSelectionPage() {
         );
     }
 
-    // ─── Main Peer‐Selection UI ──────────────────────────────────────────
+    // ─── Main Peer‐Selection UI (also used when alreadySelected) ──────────
     return (
         <Card className="bg-white p-6 space-y-6">
             <header className="flex justify-between items-center mb-4">
@@ -233,10 +223,16 @@ export default function ReviewCyclePeerSelectionPage() {
                 </div>
             </header>
 
-            <p className="mb-6 text-gray-700">
-                Please select up to {maxSelections} colleagues you would like to review
-                your performance.
-            </p>
+            {alreadySelected ? (
+                <p className="mb-6 text-gray-700">
+                    You have already selected your peers for this review cycle.
+                </p>
+            ) : (
+                <p className="mb-6 text-gray-700">
+                    Please select up to {maxSelections} colleagues you would like to
+                    review your performance.
+                </p>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 py-4">
                 {Object.entries(peersByDept).map(([dept, peers]) => (
@@ -253,15 +249,13 @@ export default function ReviewCyclePeerSelectionPage() {
                                 return (
                                     <label
                                         key={peer.code}
-                                        className={`flex h-fit items-center cursor-pointer rounded-md px-3 py-2 text-gray-800 select-none ${isSelected
-                                                ? "bg-blue-100 border border-blue-400"
-                                                : "hover:bg-gray-100 border border-transparent"
-                                            }`}
+                                        className={`flex h-fit items-center cursor-pointer rounded-md px-3 py-2 text-gray-800 select-none ${isSelected ? "bg-blue-100 border border-blue-400" : "hover:bg-gray-100 border border-transparent"}`}
                                     >
                                         <input
                                             type="checkbox"
                                             checked={isSelected}
                                             onChange={() => togglePeerSelection(peer.code)}
+                                            disabled={alreadySelected}           // <-- disable if already selected
                                             className="mr-3 w-4 h-4 cursor-pointer"
                                         />
                                         {peer.firstName} {peer.lastName}
@@ -275,7 +269,7 @@ export default function ReviewCyclePeerSelectionPage() {
 
             <Button
                 onClick={submitSelections}
-                disabled={selectedPeers.length === 0}
+                disabled={selectedPeers.length === 0 || alreadySelected}   // <-- disable button if alreadySelected
                 className="mt-6"
             >
                 Submit Selections

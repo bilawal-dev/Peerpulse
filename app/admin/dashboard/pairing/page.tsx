@@ -307,7 +307,7 @@ export default function DashboardPairingPage() {
                         <p className="text-base text-red-500">No review cycles found. Create one first.</p>
                     ) : (
                         <Select value={selectedCycle} onValueChange={setSelectedCycle}>
-                            <h1>Select Review Cycle</h1>
+                            <h1 className="font-medium">Select Review Cycle</h1>
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select review cycle" className="font-semibold" />
                             </SelectTrigger>
@@ -339,7 +339,7 @@ export default function DashboardPairingPage() {
                         </div>
                         <div className="flex items-center space-x-1 text-gray-600 text-sm">
                             <span className="text-blue-500 font-medium">/ {currentCycle?.maxReviewsAllowed ?? 0}</span>
-                            <span>Required reviews</span>
+                            <span>Maximum reviews</span>
                         </div>
                     </div>
                 </CardHeader>
@@ -364,12 +364,12 @@ export default function DashboardPairingPage() {
                                         <div className="flex items-center space-x-0.5">
                                             <User className="w-4 h-4 text-gray-500" />
                                             <ArrowLeft className="w-4 h-4 text-blue-500" />
-                                            <span>{emp.reviewers.length}/3</span>
+                                            <span>{emp.selectedBy.length}/3</span>
                                         </div>
                                         <div className="flex items-center space-x-0.5">
                                             <User className="w-4 h-4 text-gray-500" />
                                             <ArrowRight className="w-4 h-4 text-blue-500" />
-                                            <span>{emp.selectedBy.length}/3</span>
+                                            <span>{emp.reviewers.length}/3</span>
                                         </div>
                                     </div>
                                 </div>

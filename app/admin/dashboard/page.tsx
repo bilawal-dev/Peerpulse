@@ -106,7 +106,7 @@ export default function AdminDashboardPage() {
                             </div>
                         ) : (
                             <Select value={selectedCycle} onValueChange={setSelectedCycle}>
-                                <h1 className="pb-2">Select Review Cycle</h1>
+                                <h1 className="pb-2 font-medium">Select Review Cycle</h1>
                                 <SelectTrigger className="w-full text-sm sm:text-base 2xl:text-lg font-medium text-left h-fit items-start">
                                     <SelectValue placeholder="Select review cycle" />
                                 </SelectTrigger>

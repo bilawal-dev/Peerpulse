@@ -24,8 +24,6 @@ export default function DashboardReviewCyclePage() {
     const [showForm, setShowForm] = useState<boolean>(false);
     const [editingCycle, setEditingCycle] = useState<ReviewCycle | null>(null);
 
-    const BASE_URL = process.env.NEXT_PUBLIC_SERVER_URL;
-
     // 1️⃣ Fetch all cycles on mount
     useEffect(() => {
         fetchAllCycles();
@@ -35,7 +33,7 @@ export default function DashboardReviewCyclePage() {
         setIsLoading(true);
         try {
             const token = localStorage.getItem("elevu_auth");
-            const res = await fetch(`${BASE_URL}/company/get-all-review-cycle`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-review-cycle`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -79,7 +77,7 @@ export default function DashboardReviewCyclePage() {
         if (!confirm("Are you sure you want to delete this review cycle?")) return;
         try {
             const token = localStorage.getItem("elevu_auth");
-            const res = await fetch(`${BASE_URL}/company/delete-review-cycle`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/delete-review-cycle`, {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
@@ -114,7 +112,7 @@ export default function DashboardReviewCyclePage() {
                     payload.max_reviews_allowed = values.requiredPeerReviewers;
                 // Omitting reminder_gap_days here; backend allows it as optional
 
-                const res = await fetch(`${BASE_URL}/company/update-review-cycle`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-review-cycle`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
@@ -133,7 +131,7 @@ export default function DashboardReviewCyclePage() {
                     max_peer_selection: values.maxPeersSelect ?? 0,
                     max_reviews_allowed: values.requiredPeerReviewers ?? 0,
                 };
-                const res = await fetch(`${BASE_URL}/company/add-review-cycle`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/add-review-cycle`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

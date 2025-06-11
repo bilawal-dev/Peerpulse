@@ -1,26 +1,127 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock, FileText, Hourglass, Loader, Users } from "lucide-react";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import toast from "react-hot-toast";
+import { th } from "date-fns/locale";
+import Link from "next/link";
+
+type ReviewCycle = {
+    id: string;
+    label: string
+};
 
 export default function AdminDashboardPage() {
+    // static stats for now
     const totalEmployees = 37;
     const selectionsCompleted = 32;
     const pendingSelections = totalEmployees - selectionsCompleted;
     const completedReviews = 28;
     const inProgress = 0;
-    const pendingReviews = totalEmployees - completedReviews; // or your logic
+    const pendingReviews = totalEmployees - completedReviews;
+
+    // new state for cycles + selection
+    const [cycles, setCycles] = useState<ReviewCycle[]>([]);
+    const [isLoadingCycles, setIsLoadingCycles] = useState(true);
+    const [selectedCycle, setSelectedCycle] = useState("");
+
+    useEffect(() => {
+        async function fetchCycles() {
+            setIsLoadingCycles(true);
+            try {
+                const token = localStorage.getItem("elevu_auth");
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-review-cycle`, {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                });
+                if (!res.ok) throw new Error("Failed to fetch review cycles");
+                const json = await res.json();
+                const mapped = (json.data as any[]).map(item => ({
+                    id: String(item.review_cycle_id),
+                    label: item.name,
+                }));
+                setCycles(mapped);
+                if (mapped.length) setSelectedCycle(mapped[0].id);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setIsLoadingCycles(false);
+            }
+        }
+        fetchCycles();
+    }, []);
+
+    const handleAutoPair = async () => {
+        if (!selectedCycle) return;
+        try {
+            const token = localStorage.getItem("elevu_auth");
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/auto-peer-selection`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ review_cycle_id: Number(selectedCycle) }),
+            });
+
+            const json = await res.json();
+
+            if (!json.success) throw new Error(json.message || "Failed to start automated pairing");
+
+            console.log("Auto-pairing response:", json);
+            console.log("Auto-pairing started for cycle", selectedCycle);
+
+            toast.success(json.message || "Automated pairing started successfully!");
+        } catch (err) {
+            console.error("Error during auto-pairing:", err);
+            if (err instanceof Error) {
+                toast.error(err.message || "An error occurred while starting automated pairing.");
+            }
+        }
+    };
 
     return (
         <div className="space-y-8 pb-8">
             {/* ─── Stats Row ─── */}
-            <div className="grid grid-cols-1 md:grid-cols-2  gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-xl" >Peer Review Dashboard</CardTitle>
+                        <CardTitle className="text-xl">Peer Review Dashboard</CardTitle>
                     </CardHeader>
-                    <CardContent>H2 2024 (Q3-Q4)</CardContent>
+                    <CardContent>
+                        {isLoadingCycles ? (
+                            <p>Loading Review Cycles…</p>
+                        ) : cycles.length === 0 ? (
+                            <div className="flex flex-col items-start space-y-4">
+                                <p className="text-gray-500">No review cycles available.</p>
+                                <Link href={"/admin/dashboard/review-cycle"} className="py-2 px-5 w-fit bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition" >
+                                    Create Review Cycle
+                                </Link>
+                            </div>
+                        ) : (
+                            <Select value={selectedCycle} onValueChange={setSelectedCycle}>
+                                <h1 className="pb-2">Select Review Cycle</h1>
+                                <SelectTrigger className="w-full text-sm sm:text-base 2xl:text-lg font-medium text-left h-fit items-start">
+                                    <SelectValue placeholder="Select review cycle" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {cycles.map(cycle => (
+                                        <SelectItem key={cycle.id} value={cycle.id} className="text-xs sm:text-sm 2xl:text-base">
+                                            {cycle.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    </CardContent>
                 </Card>
+
                 <Card>
                     <CardHeader>
                         <CardTitle>Total Employees</CardTitle>
@@ -46,7 +147,6 @@ export default function AdminDashboardPage() {
                             </div>
                             <CheckCircle2 className="h-6 w-6 text-blue-600" />
                         </div>
-
                         <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                             <div>
                                 <p className="text-sm text-gray-500">Pending Selections</p>
@@ -55,14 +155,9 @@ export default function AdminDashboardPage() {
                             <Clock className="h-6 w-6 text-blue-600" />
                         </div>
                     </div>
-
-                    <div className="flex items-center gap-4">
-                        <Progress
-                            value={(selectionsCompleted / totalEmployees) * 100}
-                            className="flex-1 h-2 rounded-full"
-
-                        />
-                        <Button variant="outline" size="sm">
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                        <Progress value={(selectionsCompleted / totalEmployees) * 100} className="flex h-2 rounded-full" />
+                        <Button variant="outline" size="sm" onClick={handleAutoPair}>
                             <Users className="mr-2 h-4 w-4" />
                             Start Automated Pairing
                         </Button>
@@ -84,7 +179,6 @@ export default function AdminDashboardPage() {
                             </div>
                             <CheckCircle2 className="h-6 w-6 text-blue-600" />
                         </div>
-
                         <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                             <div>
                                 <p className="text-sm text-gray-500">In Progress</p>
@@ -92,7 +186,6 @@ export default function AdminDashboardPage() {
                             </div>
                             <Loader className="h-6 w-6 text-blue-600" />
                         </div>
-
                         <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                             <div>
                                 <p className="text-sm text-gray-500">Pending Reviews</p>
@@ -101,21 +194,12 @@ export default function AdminDashboardPage() {
                             <Hourglass className="h-6 w-6 text-blue-600" />
                         </div>
                     </div>
-
-                    <div className="flex items-center gap-4">
-                        <Progress
-                            value={(completedReviews / (totalEmployees * 3)) * 100}
-                            className="flex-1 h-2 rounded-full"
-                        />
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                        <Progress value={(completedReviews / (totalEmployees * 3)) * 100} className="flex h-2 rounded-full" />
                         <Button variant="outline" size="sm">
                             <FileText className="mr-2 h-4 w-4" />
                             Compile Reviews
                         </Button>
-                    </div>
-
-                    <div>
-                        <p className="text-sm text-gray-500">Missing Reviews Form:</p>
-                        <p className="mt-1 text-gray-700">—</p>
                     </div>
                 </CardContent>
             </Card>

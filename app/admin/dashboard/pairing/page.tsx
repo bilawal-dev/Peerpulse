@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useMemo, DragEvent } from "react"
+import React, { useState, useMemo, DragEvent, useEffect } from "react"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { User, ArrowLeft, ArrowRight, UserCheck, X as XIcon, Info } from "lucide-react"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@radix-ui/react-tooltip"
@@ -11,6 +12,7 @@ type Employee = {
     code: string
     firstName: string
     lastName: string
+    department: string
     reviewers: string[]           // codes of employees currently reviewing this one
     suggestedReviewers: string[]  // codes of employees suggested to review this one
     peerSelections: string[]      // codes this employee wants to review
@@ -21,50 +23,139 @@ type Employee = {
 /** Static mock data. Replace/fetch from an API later **/
 const INITIAL_EMPLOYEES: Employee[] = [
     {
-        code: "E001", firstName: "Alice", lastName: "Johnson",
-        reviewers: ["E002", "E005"], suggestedReviewers: ["E003", "E006"],
-        peerSelections: ["E002", "E003"], selectedBy: ["E002", "E005"], manager: "M001"
+        code: "E001",
+        firstName: "Alice",
+        lastName: "Johnson",
+        department: "Business Operations",
+        reviewers: ["E002", "E005"],
+        suggestedReviewers: ["E003", "E006"],
+        peerSelections: ["E002", "E003"],
+        selectedBy: ["E002", "E005"],
+        manager: "M001",
     },
     {
-        code: "E002", firstName: "Bob", lastName: "Smith",
-        reviewers: ["E003"], suggestedReviewers: ["E001"],
-        peerSelections: ["E001", "E004"], selectedBy: ["E001"], manager: "M001"
+        code: "E002",
+        firstName: "Bob",
+        lastName: "Smith",
+        department: "Marketing",
+        reviewers: ["E003"],
+        suggestedReviewers: ["E001"],
+        peerSelections: ["E001", "E004"],
+        selectedBy: ["E001"],
+        manager: "M001",
     },
     {
-        code: "E003", firstName: "Carol", lastName: "Lee",
-        reviewers: ["E001", "E004"], suggestedReviewers: ["E002"],
-        peerSelections: ["E001", "E002", "E006"], selectedBy: ["E001", "E004"], manager: "M002"
+        code: "E003",
+        firstName: "Carol",
+        lastName: "Lee",
+        department: "Engineering",
+        reviewers: ["E001", "E004"],
+        suggestedReviewers: ["E002"],
+        peerSelections: ["E001", "E002", "E006"],
+        selectedBy: ["E001", "E004"],
+        manager: "M002",
     },
     {
-        code: "E004", firstName: "David", lastName: "Wang",
-        reviewers: [], suggestedReviewers: ["E003", "E007"],
-        peerSelections: ["E003"], selectedBy: ["E002", "E006"], manager: "M002"
+        code: "E004",
+        firstName: "David",
+        lastName: "Wang",
+        department: "Product",
+        reviewers: [],
+        suggestedReviewers: ["E003", "E007"],
+        peerSelections: ["E003"],
+        selectedBy: ["E002", "E006"],
+        manager: "M002",
     },
     {
-        code: "E005", firstName: "Emily", lastName: "Davis",
-        reviewers: ["E001"], suggestedReviewers: [],
-        peerSelections: ["E001", "E007"], selectedBy: ["E001", "E006"], manager: "M001"
+        code: "E005",
+        firstName: "Emily",
+        lastName: "Davis",
+        department: "Human Resources",
+        reviewers: ["E001"],
+        suggestedReviewers: [],
+        peerSelections: ["E001", "E007"],
+        selectedBy: ["E001", "E006"],
+        manager: "M001",
     },
     {
-        code: "E006", firstName: "Frank", lastName: "Martinez",
-        reviewers: ["E003", "E005"], suggestedReviewers: ["E001"],
-        peerSelections: ["E003", "E004"], selectedBy: ["E003"], manager: "M003"
+        code: "E006",
+        firstName: "Frank",
+        lastName: "Martinez",
+        department: "Finance",
+        reviewers: ["E003", "E005"],
+        suggestedReviewers: ["E001"],
+        peerSelections: ["E003", "E004"],
+        selectedBy: ["E003"],
+        manager: "M003",
     },
     {
-        code: "E007", firstName: "Grace", lastName: "Nguyen",
-        reviewers: ["E004"], suggestedReviewers: ["E006"],
-        peerSelections: ["E005"], selectedBy: ["E004", "E006"], manager: "M003"
+        code: "E007",
+        firstName: "Grace",
+        lastName: "Nguyen",
+        department: "Sales",
+        reviewers: ["E004"],
+        suggestedReviewers: ["E006"],
+        peerSelections: ["E005"],
+        selectedBy: ["E004", "E006"],
+        manager: "M003",
     },
     {
-        code: "E008", firstName: "Henry", lastName: "Patel",
-        reviewers: [], suggestedReviewers: [],
-        peerSelections: [], selectedBy: [], manager: "M002"
+        code: "E008",
+        firstName: "Henry",
+        lastName: "Patel",
+        department: "IT",
+        reviewers: [],
+        suggestedReviewers: [],
+        peerSelections: [],
+        selectedBy: [],
+        manager: "M002",
     },
-]
+];
+
+type ReviewCycle = {
+    id: string;
+    label: string;
+    maxReviewsAllowed: number;
+};
 
 export default function DashboardPairingPage() {
     const [allEmps, setAllEmps] = useState<Employee[]>(INITIAL_EMPLOYEES)
     const [currentCode, setCurrentCode] = useState<string | null>(null)
+
+    const [cycles, setCycles] = useState<ReviewCycle[]>([]);
+    const [isLoadingCycles, setIsLoadingCycles] = useState(true);
+    const [selectedCycle, setSelectedCycle] = useState<string>("");
+
+    const currentCycle = cycles.find(c => c.id === selectedCycle);
+
+    // ← fetch review cycles on mount
+    useEffect(() => {
+        async function fetchCycles() {
+            setIsLoadingCycles(true);
+            try {
+                const token = localStorage.getItem("elevu_auth");
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-review-cycle`, {
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) throw new Error("Failed to fetch review cycles");
+                const json = await res.json();
+
+                const mapped = (json.data as any[]).map(item => ({
+                    id: String(item.review_cycle_id),
+                    label: item.name,
+                    maxReviewsAllowed: item.max_reviews_allowed ?? 0,
+                }));
+
+                setCycles(mapped);
+                if (mapped.length) setSelectedCycle(mapped[0].id);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setIsLoadingCycles(false);
+            }
+        }
+        fetchCycles();
+    }, []);
 
     const currentEmp = useMemo(
         () => allEmps.find((e) => e.code === currentCode) || null,
@@ -89,20 +180,8 @@ export default function DashboardPairingPage() {
 
     const selectedList = currentEmp ? currentEmp.peerSelections : []
     const selectedByList = currentEmp ? currentEmp.selectedBy : []
-    const mutualList = currentEmp
-        ? currentEmp.peerSelections.filter((c) =>
-            currentEmp.selectedBy.includes(c)
-        )
-        : []
-    const availableList = currentEmp
-        ? peers
-            .filter(
-                (e) =>
-                    !selectedList.includes(e.code) &&
-                    !selectedByList.includes(e.code)
-            )
-            .map((e) => e.code)
-        : []
+    const mutualList = currentEmp ? currentEmp.peerSelections.filter((c) => currentEmp.selectedBy.includes(c)) : []
+    const availableList = currentEmp ? peers.filter((e) => !selectedList.includes(e.code) && !selectedByList.includes(e.code)).map((e) => e.code) : []
 
     function removeFromZone(zone: "current" | "suggested", code: string) {
         if (!currentEmp) return
@@ -186,10 +265,7 @@ export default function DashboardPairingPage() {
     }
 
     // Handles drop on a zone
-    function handleDrop(
-        e: DragEvent<HTMLDivElement>,
-        zone: "current" | "suggested"
-    ) {
+    function handleDrop(e: DragEvent<HTMLDivElement>, zone: "current" | "suggested") {
         e.preventDefault()
         const code = e.dataTransfer.getData("text/plain")
         addToZone(zone, code)
@@ -224,14 +300,32 @@ export default function DashboardPairingPage() {
                             </Tooltip>
                         </TooltipProvider>
                     </div>
-                    <div className="mt-5 px-4 py-2 bg-blue-50 rounded-md text-blue-800">
+
+                    {isLoadingCycles ? (
+                        <p className="text-sm text-gray-500">Loading cycles…</p>
+                    ) : cycles.length === 0 ? (
+                        <p className="text-base text-red-500">No review cycles found. Create one first.</p>
+                    ) : (
+                        <Select value={selectedCycle} onValueChange={setSelectedCycle}>
+                            <h1>Select Review Cycle</h1>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select review cycle" className="font-semibold" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {cycles.map(c => (
+                                    <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+
+                    <div className="px-4 py-2 bg-blue-50 rounded-md text-blue-800">
                         Currently working on:{" "}
                         <span className="font-medium">
-                            {currentEmp
-                                ? `${currentEmp.firstName} ${currentEmp.lastName}`
-                                : "No employee selected"}
+                            {currentEmp ? `${currentEmp.firstName} ${currentEmp.lastName}` : "No employee selected"}
                         </span>
                     </div>
+
                     <div className="mt-4 flex flex-wrap gap-6 bg-gray-50 p-3 border border-gray-200 rounded-md">
                         <div className="flex items-center space-x-1 text-gray-600 text-sm">
                             <User className="w-5 h-5" />
@@ -244,14 +338,8 @@ export default function DashboardPairingPage() {
                             <span>Reviewing others</span>
                         </div>
                         <div className="flex items-center space-x-1 text-gray-600 text-sm">
-                            <span className="text-blue-500 font-medium">/ 3</span>
+                            <span className="text-blue-500 font-medium">/ {currentCycle?.maxReviewsAllowed ?? 0}</span>
                             <span>Required reviews</span>
-                        </div>
-                        <div className="flex items-center space-x-1 text-gray-600 text-sm">
-                            <div className="flex items-center justify-center bg-blue-50 border border-blue-200 rounded-full w-6 h-6">
-                                <UserCheck className="w-4 h-4 text-blue-500" />
-                            </div>
-                            <span>Selected you as reviewer</span>
                         </div>
                     </div>
                 </CardHeader>
@@ -260,10 +348,7 @@ export default function DashboardPairingPage() {
                 <CardContent className="flex flex-wrap overflow-y-auto gap-6  select-none">
                     {/* Left: Employee List */}
                     <div className="flex flex-col w-full md:w-80">
-                        <select
-                            className="mb-4 p-2 border border-gray-200 rounded-md bg-white text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                            onChange={() => { }}
-                        >
+                        <select className="mb-4 p-2 border border-gray-200 rounded-md bg-white text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" onChange={() => { }}>
                             <option value="mostSelected">Most Selected</option>
                             <option value="leastSelected">Least Selected</option>
                             <option value="name">Name</option>
@@ -271,12 +356,7 @@ export default function DashboardPairingPage() {
 
                         <div className="flex-1 overflow-y-auto border border-gray-200 rounded-md">
                             {allEmps.map((emp) => (
-                                <div
-                                    key={emp.code}
-                                    className={`flex flex-col sm:flex-row justify-between sm:items-center gap-2 sm:gap-0 px-4 py-3 cursor-pointer ${currentCode === emp.code ? "bg-blue-50" : "hover:bg-gray-50"
-                                        }`}
-                                    onClick={() => setCurrentCode(emp.code)}
-                                >
+                                <div key={emp.code} onClick={() => setCurrentCode(emp.code)} className={`flex flex-col sm:flex-row justify-between sm:items-center gap-2 sm:gap-0 px-4 py-3 cursor-pointer ${currentCode === emp.code ? "bg-blue-50" : "hover:bg-gray-50"}`}>
                                     <div className="font-medium text-gray-800">
                                         {emp.firstName} {emp.lastName}
                                     </div>
@@ -304,8 +384,9 @@ export default function DashboardPairingPage() {
                                 <p className="text-gray-600">Select an employee to adjust pairings.</p>
                             ) : (
                                 <>
-                                    <h3 className="text-xl font-semibold text-gray-900 mb-6">
+                                    <h3 className="text-xl font-semibold flex items-center gap-5 text-gray-900 mb-6">
                                         {currentEmp.firstName} {currentEmp.lastName}
+                                        <span className="text-base text-blue-500 font-normal"> | {currentEmp.department}</span>
                                     </h3>
 
                                     {/* Drag-and-drop via native HTML events */}
@@ -351,7 +432,7 @@ export default function DashboardPairingPage() {
                                         <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
                                             <div>
                                                 <h5 className="text-md font-medium text-gray-700 mb-2">
-                                                    Selected ({selectedList.length})
+                                                    Selected {currentEmp.firstName} ({selectedList.length})
                                                 </h5>
                                                 <div className="space-y-2">
                                                     {selectedList.map((code, i) => (

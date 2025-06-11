@@ -229,8 +229,7 @@ export default function ReviewCyclePeerSelectionPage() {
                 </p>
             ) : (
                 <p className="mb-6 text-gray-700">
-                    Please select up to {maxSelections} colleagues you would like to
-                    review your performance.
+                    Please select up to {maxSelections} colleagues who you work closely with or know well enough to provide meaningful feedback on your performance.
                 </p>
             )}
 

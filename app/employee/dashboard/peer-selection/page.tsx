@@ -101,7 +101,7 @@ export default function PeerSelectionPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {cycles.map((cycle) => (
                         <Card key={cycle.review_cycle_id} className="bg-white shadow-sm">
-                            <CardHeader className="flex flex-row justify-between items-center border-b pb-2">
+                            <CardHeader className="flex flex-row justify-between items-start border-b pb-2">
                                 <CardTitle className="text-lg font-semibold">{cycle.name}</CardTitle>
                                 <div
                                     className={
@@ -114,7 +114,7 @@ export default function PeerSelectionPage() {
                                 </div>
                             </CardHeader>
 
-                            <CardContent className="space-y-2 text-gray-700">
+                            <CardContent className="space-y-2 pt-2 text-gray-700">
                                 <div>
                                     <span className="font-medium">Review Cycle ID:</span> {cycle.review_cycle_id}
                                 </div>

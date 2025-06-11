@@ -501,11 +501,11 @@ export default function EmployeesPage() {
               </Tooltip>
             </TooltipProvider>
 
-            <Button onClick={handleInviteAll} className="bg-blue-600 hover:bg-blue-700"            >
+            <Button onClick={handleInviteAll} className="bg-blue-600 hover:bg-blue-700">
               Invite All Employees
             </Button>
 
-            <Button onClick={() => fileInputRef.current?.click()} className="bg-blue-600 hover:bg-blue-700"            >
+            <Button onClick={() => fileInputRef.current?.click()} className="bg-blue-600 hover:bg-blue-700">
               Upload Employees
             </Button>
 

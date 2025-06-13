@@ -15,8 +15,7 @@ type ZoneItem = { code: string; assignmentId: number }
 /** Employee data model **/
 type Employee = {
     code: string
-    firstName: string
-    lastName: string
+    name: string
     department: string
     reviewers: ZoneItem[]           // willReview zone
     suggestedReviewers: ZoneItem[]  // beingReviewedBy zone
@@ -94,11 +93,9 @@ export default function DashboardPairingPage() {
                 if (!res.ok) throw new Error("Failed to fetch employees for review")
                 const json = await res.json()
                 const mappedEmps: Employee[] = (json.data as any[]).map((item) => {
-                    const [firstName, ...rest] = item.name.split(" ")
                     return {
                         code: String(item.employee_id),
-                        firstName,
-                        lastName: rest.join(" "),
+                        name: item.name,
                         department: item.department,
                         reviewers: [],
                         suggestedReviewers: [],
@@ -436,7 +433,7 @@ export default function DashboardPairingPage() {
                 className={`${draggable ? "cursor-grab" : "cursor-default"} flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 bg-white border border-gray-200 rounded-md px-3 py-2 mb-2`}
             >
                 <div className="flex-1 text-gray-800 font-medium">
-                    {emp.firstName} {emp.lastName}
+                    {emp.name}
                 </div>
                 <div className="flex items-center space-x-2 text-gray-500 text-xs">
                     <div className="flex items-center space-x-0.5">
@@ -509,7 +506,7 @@ export default function DashboardPairingPage() {
                     <div className="px-4 py-2 bg-blue-50 rounded-md text-blue-800">
                         Currently working on:{" "}
                         <span className="font-medium">
-                            {currentEmp ? `${currentEmp.firstName} ${currentEmp.lastName}` : "No employee selected"}
+                            {currentEmp ? `${currentEmp.name}` : "No employee selected"}
                         </span>
                     </div>
 
@@ -552,7 +549,7 @@ export default function DashboardPairingPage() {
                                     className={`flex flex-col sm:flex-row justify-between sm:items-center gap-2 sm:gap-0 px-4 py-3 cursor-pointer ${currentCode === emp.code ? "bg-blue-50" : "hover:bg-gray-50"}`}
                                 >
                                     <div className="font-medium text-gray-800">
-                                        {emp.firstName} {emp.lastName}
+                                        {emp.name}
                                     </div>
                                     <div className="flex items-center space-x-2 text-gray-500 text-xs">
                                         <div className="flex items-center space-x-0.5">
@@ -583,7 +580,7 @@ export default function DashboardPairingPage() {
                             ) : (
                                 <>
                                     <h3 className="text-xl font-semibold flex items-center gap-5 text-gray-900 mb-6">
-                                        {currentEmp.firstName} {currentEmp.lastName}
+                                        {currentEmp.name}
                                         <span className="text-base text-blue-500 font-normal"> | {currentEmp.department}</span>
                                     </h3>
 
@@ -634,7 +631,7 @@ export default function DashboardPairingPage() {
                                         <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
                                             <div>
                                                 <h5 className="text-md font-medium text-gray-700 mb-2">
-                                                    Selected {currentEmp.firstName} ({selectedList.length})
+                                                    {currentEmp.name} Selected ({selectedList.length})
                                                 </h5>
                                                 <div className="space-y-2">
                                                     {selectedList.map((code) => (
@@ -645,7 +642,7 @@ export default function DashboardPairingPage() {
 
                                             <div>
                                                 <h5 className="text-md font-medium text-gray-700 mb-2">
-                                                    {currentEmp.firstName} Selected ({selectedByList.length})
+                                                    Selected {currentEmp.name} ({selectedByList.length})
                                                 </h5>
                                                 <div className="space-y-2">
                                                     {selectedByList.map((code) => (

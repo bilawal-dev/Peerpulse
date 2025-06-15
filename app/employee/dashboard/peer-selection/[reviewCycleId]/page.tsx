@@ -1,89 +1,71 @@
-// app/employee/dashboard/peer-selection/[reviewCycleId]/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
+import { AlertCircle } from "lucide-react";
 
 type Employee = {
     code: string;
     firstName: string;
     lastName: string;
     department: string;
-    isSelected: boolean;             // <-- added this
+    isSelected: boolean;
     managerCode?: string;
 };
 
 export default function ReviewCyclePeerSelectionPage() {
-    // ─── State ───────────────────────────────────────────────────────────
     const { user } = useAuth();
-
-    const [employeeName, setEmployeeName] = useState(user.name || "");
+    const [employeeName] = useState(user.name || "");
     const [maxSelections, setMaxSelections] = useState(4);
     const [availablePeers, setAvailablePeers] = useState<Employee[]>([]);
     const [selectedPeers, setSelectedPeers] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [submissionMessage, setSubmissionMessage] = useState<string | null>(null);
-
-    // New state: whether this user has already selected peers for this cycle
     const [alreadySelected, setAlreadySelected] = useState(false);
+    const [fetchError, setFetchError] = useState<boolean>(false);
 
-    // ─── Helper to group by department ───────────────────────────────────
-    const groupByDepartment = (employees: Employee[]) => {
-        return employees.reduce<Record<string, Employee[]>>((acc, emp) => {
-            const dept = emp.department || "Other";
-            acc[dept] = acc[dept] || [];
-            acc[dept].push(emp);
-            return acc;
-        }, {});
-    };
-
-    // ─── Extract reviewCycleId from URL via useParams() ────────────────
     const params = useParams();
     const reviewCycleId = params?.reviewCycleId || "";
 
-    // ─── Fetch “employees by department” + “review cycle” from backend ──
+    const groupByDepartment = (employees: Employee[]) => employees.reduce<Record<string, Employee[]>>((acc, emp) => {
+        const dept = emp.department || "Other";
+        acc[dept] = acc[dept] || [];
+        acc[dept].push(emp);
+        return acc;
+    }, {});
+
     useEffect(() => {
         async function fetchData() {
             setLoading(true);
+            setFetchError(false);
 
             try {
-                // 1️⃣ Grab your JWT from localStorage
                 const token = localStorage.getItem("elevu_auth");
-                if (!token) {
-                    throw new Error("No auth token found. Please log in again.");
-                }
+                if (!token) throw new Error("No auth token found. Please log in again.");
 
-                // 2️⃣ Call the get-employee-by-department endpoint
                 const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-employee-by-department/${reviewCycleId}`, {
-                    method: "GET",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
                 });
+                const json = await res.json();
 
-                if (!res.ok) {
-                    throw new Error(`Failed to fetch employees (status ${res.status})`);
+                if (!json.success) {
+                    setFetchError(true);
+                    throw new Error(json.message || 'Unable to load peer selection right now.')
                 }
 
-                const json = await res.json();
-                console.log("Fetched data:", json);
-
-                // Check if the backend indicates "already selected peers"
                 const isAlready = json.data.is_already_selected_peers === true;
                 setAlreadySelected(isAlready);
 
-                // Otherwise, proceed to process employees_data and review_cycle
                 const { employees_data, review_cycle } = json.data;
-
-                // Set maxSelections exactly as returned
                 setMaxSelections(review_cycle.max_peer_selection);
 
-                // Flatten “employees_data” into our Employee[] shape, including is_selected
                 const flatPeers: Employee[] = employees_data.flatMap((deptObj: any) =>
                     deptObj.employees.map((emp: any) => {
                         const [first, ...rest] = emp.name.split(" ");
@@ -92,23 +74,20 @@ export default function ReviewCyclePeerSelectionPage() {
                             firstName: first,
                             lastName: rest.join(" ") || "",
                             department: deptObj.department,
-                            isSelected: emp.is_selected,                     // <–– track it here
+                            isSelected: emp.is_selected,
                         };
                     })
                 );
-
                 setAvailablePeers(flatPeers);
 
-                // If the user already selected peers in a previous session, pre-fill selectedPeers
                 if (isAlready) {
-                    const previouslySelectedCodes = flatPeers
-                        .filter((p) => p.isSelected)
-                        .map((p) => p.code);
-                    setSelectedPeers(previouslySelectedCodes);
+                    const prev = flatPeers.filter((p) => p.isSelected).map((p) => p.code);
+                    setSelectedPeers(prev);
                 }
             } catch (err: any) {
                 console.error("Error loading data:", err);
-                toast.error(err.message || "Something went wrong.");
+                toast.error(err.message1 || 'Something went wrong while loading peers.')
+                setFetchError(true);
             } finally {
                 setLoading(false);
             }
@@ -117,13 +96,41 @@ export default function ReviewCyclePeerSelectionPage() {
         fetchData();
     }, [reviewCycleId, user]);
 
-    // ─── When the user toggles a checkbox ────────────────────────────────
-    function togglePeerSelection(code: string) {
-        if (alreadySelected) {
-            // if already selected once, do nothing—inputs are disabled anyway
+    async function submitSelections() {
+        if (selectedPeers.length === 0) {
+            toast.error("Please select at least one peer");
             return;
         }
 
+        try {
+            const token = localStorage.getItem("elevu_auth");
+            if (!token) throw new Error("No auth token found. Please log in again.");
+
+            const employeeIds = selectedPeers.map((code) => parseInt(code, 10));
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/select-peer-list/${reviewCycleId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ employee_ids: employeeIds }),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                const msg = errorData?.message || `Failed to submit selections (status ${res.status})`;
+                throw new Error(msg);
+            }
+
+            setSubmissionMessage(`Thank you! You selected ${selectedPeers.length} peers.`);
+        } catch (err: any) {
+            console.error("Error submitting selections:", err);
+            toast.error(err.message || "Error submitting selections");
+        }
+    }
+
+    function togglePeerSelection(code: string) {
+        if (alreadySelected) return;
         if (selectedPeers.includes(code)) {
             setSelectedPeers(selectedPeers.filter((c) => c !== code));
         } else {
@@ -138,60 +145,28 @@ export default function ReviewCyclePeerSelectionPage() {
         }
     }
 
-    // ─── Handle “Submit” click ───────────────────────────────────────────
-    async function submitSelections() {
-        if (selectedPeers.length === 0) {
-            toast.error("Please select at least one peer");
-            return;
-        }
-
-        try {
-            // 1️⃣ Grab your JWT from localStorage
-            const token = localStorage.getItem("elevu_auth");
-            if (!token) {
-                throw new Error("No auth token found. Please log in again.");
-            }
-
-            // 2️⃣ Convert selectedPeers (string[]) to numbers[]
-            const employeeIds = selectedPeers.map((code) => parseInt(code, 10));
-
-            // 3️⃣ POST to /employee/select-peer-list/{reviewCycleId}
-            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/select-peer-list/${reviewCycleId}`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ employee_ids: employeeIds }),
-            });
-
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                const msg =
-                    errorData?.message ||
-                    `Failed to submit selections (status ${res.status})`;
-                throw new Error(msg);
-            }
-
-            // 4️⃣ On success, show the “Selection Submitted!” UI
-            setSubmissionMessage(
-                `Thank you! You selected ${selectedPeers.length} peers.`
-            );
-        } catch (err: any) {
-            console.error("Error submitting selections:", err);
-            toast.error(err.message || "Error submitting selections");
-        }
-    }
-
-    // ─── Group the fetched, flattened peers by department ────────────────
     const peersByDept = groupByDepartment(availablePeers);
 
-    // ─── Loading Skeleton ────────────────────────────────────────────────
+    // Generic error UI
+    if (!loading && fetchError) {
+        return (
+            <Card className="p-8 text-center">
+                <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
+                <h2 className="text-2xl font-semibold mb-2">Something Went Wrong</h2>
+                <p className="text-lg text-gray-600">
+                    We couldn't load peer selection right now. Please try again later or contact
+                    support if the issue persists.
+                </p>
+            </Card>
+        );
+    }
+
+    // Loading skeleton
     if (loading) {
         return <PeerSelectionSkeleton />;
     }
 
-    // ─── After Submit (Success) ──────────────────────────────────────────
+    // After successful submission
     if (submissionMessage) {
         return (
             <Card className="p-8">
@@ -213,7 +188,7 @@ export default function ReviewCyclePeerSelectionPage() {
         );
     }
 
-    // ─── Main Peer‐Selection UI (also used when alreadySelected) ──────────
+    // Main peer-selection UI
     return (
         <Card className="bg-white p-6 space-y-6">
             <header className="flex justify-between items-center mb-4">
@@ -229,16 +204,14 @@ export default function ReviewCyclePeerSelectionPage() {
                 </p>
             ) : (
                 <p className="mb-6 text-gray-700">
-                    Please select up to {maxSelections} colleagues who you work closely with or know well enough to provide meaningful feedback on your performance.
+                    Please select up to {maxSelections} colleagues who you work closely with or
+                    know well enough to provide meaningful feedback on your performance.
                 </p>
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 py-4">
                 {Object.entries(peersByDept).map(([dept, peers]) => (
-                    <section
-                        key={dept}
-                        className="border border-gray-300 rounded-md overflow-hidden flex flex-col"
-                    >
+                    <section key={dept} className="border border-gray-300 rounded-md overflow-hidden flex flex-col"                    >
                         <h2 className="bg-gray-50 px-4 py-2 font-semibold text-gray-700 border-b border-gray-300">
                             {dept}
                         </h2>
@@ -246,15 +219,12 @@ export default function ReviewCyclePeerSelectionPage() {
                             {peers.map((peer) => {
                                 const isSelected = selectedPeers.includes(peer.code);
                                 return (
-                                    <label
-                                        key={peer.code}
-                                        className={`flex h-fit items-center cursor-pointer rounded-md px-3 py-2 text-gray-800 select-none ${isSelected ? "bg-blue-100 border border-blue-400" : "hover:bg-gray-100 border border-transparent"}`}
-                                    >
+                                    <label key={peer.code} className={`flex h-fit items-center cursor-pointer rounded-md px-3 py-2 text-gray-800 select-none ${isSelected ? "bg-blue-100 border border-blue-400" : "hover:bg-gray-100 border border-transparent"}`}                                    >
                                         <input
                                             type="checkbox"
                                             checked={isSelected}
                                             onChange={() => togglePeerSelection(peer.code)}
-                                            disabled={alreadySelected}           // <-- disable if already selected
+                                            disabled={alreadySelected}
                                             className="mr-3 w-4 h-4 cursor-pointer"
                                         />
                                         {peer.firstName} {peer.lastName}
@@ -268,7 +238,7 @@ export default function ReviewCyclePeerSelectionPage() {
 
             <Button
                 onClick={submitSelections}
-                disabled={selectedPeers.length === 0 || alreadySelected}   // <-- disable button if alreadySelected
+                disabled={selectedPeers.length === 0 || alreadySelected}
                 className="mt-6"
             >
                 Submit Selections
@@ -277,7 +247,6 @@ export default function ReviewCyclePeerSelectionPage() {
     );
 }
 
-// ─── Skeleton (Loading State) ─────────────────────────────────────────────
 function PeerSelectionSkeleton() {
     return (
         <div className="animate-pulse space-y-2 p-6">

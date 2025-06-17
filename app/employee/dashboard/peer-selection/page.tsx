@@ -27,7 +27,7 @@ interface ApiResponse {
     data: ReviewCycle[];
 }
 
-export default function PeerSelectionPage() {
+export default function DashboardPeerSelectionPage() {
     const [cycles, setCycles] = useState<ReviewCycle[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -93,9 +93,9 @@ export default function PeerSelectionPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {cycles.map((cycle) => (
                         <Card key={cycle.review_cycle_id} className="bg-white shadow-sm">
-                            <CardHeader className="flex flex-row justify-between items-start border-b pb-2">
-                                <CardTitle className="text-lg font-semibold">{cycle.name}</CardTitle>
-                                <div className={cycle.is_active ? "text-sm bg-green-100 text-green-700 rounded-full px-2 py-1" : "text-sm bg-red-100 text-red-700 rounded-full px-2 py-1"}                                >
+                            <CardHeader className="flex flex-row justify-between items-end border-b py-3">
+                                <CardTitle className="text-lg font-semibold my-0 py-0">{cycle.name}</CardTitle>
+                                <div className={cycle.is_active ? "text-sm bg-green-100 text-green-700 rounded-full px-2 py-1" : "text-sm bg-red-100 text-red-700 rounded-full px-2 py-1"}>
                                     {cycle.is_active ? "Active" : "Inactive"}
                                 </div>
                             </CardHeader>

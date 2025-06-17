@@ -47,12 +47,11 @@ export default function DashboardReviewCyclePage() {
         setIsLoading(true);
         try {
             const token = localStorage.getItem("elevu_auth");
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-review-cycle`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-review-cycle`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+            });
             if (!res.ok) throw new Error();
             const json = await res.json();
             setCycles(

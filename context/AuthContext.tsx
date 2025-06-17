@@ -10,6 +10,7 @@ export interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string, userType: "company" | "employee") => Promise<void>;
+  logout: () => void;
   registerCompany: (companyName: string, email: string, password: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
 }
@@ -119,6 +120,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // * Logout (HANDLES COMPANY & EMPLOYEE)
+  const logout = () => {
+    localStorage.removeItem("elevu_auth");
+    toast.success("Signout Successful");
+    setUser(null);
+    router.push("/login");
+  };
+
   // * FORGOT-PASSWORD (HANDLES COMPANY FORGOT-PASSWORD)
   const forgotPassword = async (email: string) => {
     try {
@@ -145,7 +154,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, registerCompany, forgotPassword, }}    >
+    <AuthContext.Provider value={{ user, loading, login, logout, registerCompany, forgotPassword, }}    >
       {children}
     </AuthContext.Provider>
   );

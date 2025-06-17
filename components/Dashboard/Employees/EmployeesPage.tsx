@@ -569,7 +569,7 @@ export default function EmployeesPage() {
                   "Department",
                   // "Peer Selection",
                   // "Review",
-                  "Status",
+                  // "Status",
                   "Manager Email",
                   "Actions",
                 ].map((h) => (
@@ -608,10 +608,9 @@ export default function EmployeesPage() {
                       Review Link
                     </a>
                   </td> */}
-                  <td className="px-4 py-3 whitespace-nowrap capitalize">
-                    {/* No status yet from backend → show "-" */}
+                  {/* <td className="px-4 py-3 whitespace-nowrap capitalize">
                     {(emp as any).status || "-"}
-                  </td>
+                  </td> */}
                   <td className="px-4 py-3 whitespace-nowrap">
                     {emp.manager?.email || "-"}
                   </td>

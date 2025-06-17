@@ -1,323 +1,155 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import Link from "next/link";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
-import { usePathname, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-type ReviewResponse = {
-    [questionName: string]: string;
-};
+interface ReviewCycle {
+    review_cycle_id: number;
+    name: string;
+    max_peer_selection: number;
+    max_reviews_allowed: number;
+    start_date: string;
+    end_date: string;
+    is_active: boolean;
+    is_peer_selection_enabled: boolean;
+    is_review_enabled: boolean;
+    created_at: string;
+    updated_at: string;
+}
 
-type Peer = {
-    id: string;
-    fullName: string;
-};
-
-const QUESTIONS = {
-    self: [
-        {
-            name: "Impact",
-            label: "Impact",
-            description:
-                "What were your top successes in this review period? How did these contribute to key business focuses?",
-            charLimit: 100,
-        },
-        {
-            name: "Development",
-            label: "Development",
-            description:
-                "How have you used feedback to improve your work? Provide specific examples.",
-            charLimit: 100,
-        },
-        {
-            name: "Growth",
-            label: "Growth",
-            description:
-                "What are your specific goals for next period? Include measurable outcomes and timelines.",
-            charLimit: 100,
-        },
-    ],
-    peer: [
-        {
-            name: "PeerStrengths",
-            label: "Identifying Strengths",
-            description:
-                "What is this peer's greatest strength or “superpower” in their role? Provide examples.",
-            charLimit: 250,
-        },
-        {
-            name: "PeerDevelopment",
-            label: "Identifying Areas for Development",
-            description:
-                "Where can this peer develop a new strength? How can they build this skill?",
-            charLimit: 250,
-        },
-    ],
-    manager: [
-        {
-            name: "ManagerStrengths",
-            label: "Manager Strengths",
-            description:
-                "What leadership qualities do you appreciate in your manager? Share examples.",
-            charLimit: 100,
-        },
-        {
-            name: "ManagerImprovements",
-            label: "Manager Improvements",
-            description:
-                "Where could your manager improve their leadership approach? Provide examples.",
-            charLimit: 100,
-        },
-    ],
-};
+interface ApiResponse {
+    success: boolean;
+    status: number;
+    message: string;
+    data: ReviewCycle[];
+}
 
 export default function DashboardReviewFormPage() {
-    const pathname = usePathname();
-    const employeeCode = pathname.split("/").pop() || "";
-
+    const [cycles, setCycles] = useState<ReviewCycle[]>([]);
     const [loading, setLoading] = useState(true);
-    const [employeeName, setEmployeeName] = useState("Loading...");
-    const [peers, setPeers] = useState<Peer[]>([]);
-    const [managerName, setManagerName] = useState("Manager");
-    const [reviewPeriod, setReviewPeriod] = useState("Q3 & Q4 - 2024");
+    const [error, setError] = useState<string | null>(null);
 
-    const [currentStep, setCurrentStep] = useState(0);
-    const [responses, setResponses] = useState<ReviewResponse>({});
-
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const router = useRouter();
-
-    // Fetch employee, peers, manager, and period info from API or simulate here
     useEffect(() => {
-        async function fetchData() {
+        async function fetchReviewCycles() {
+            setLoading(true);
+            setError(null);
+
             try {
-                // Simulate fetch delay
-                await new Promise((r) => setTimeout(r, 1000));
+                const token = localStorage.getItem("elevu_auth");
+                if (!token) throw new Error("No auth token found. Please log in again.");
 
-                // Simulated API response (replace with actual fetch)
-                const employeeData = {
-                    employeeName: "Brandon Tuttle",
-                    peers: [
-                        { id: "p1", fullName: "Aaron Kim" },
-                        { id: "p2", fullName: "Edward Andrews" },
-                        { id: "p3", fullName: "Lex Fatianow" },
-                    ],
-                    managerName: "Cedric Bernard",
-                    reviewPeriod: "Q3 & Q4 - 2024",
-                };
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-company-review-cycle`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
 
-                setEmployeeName(employeeData.employeeName);
-                setPeers(employeeData.peers);
-                setManagerName(employeeData.managerName);
-                setReviewPeriod(employeeData.reviewPeriod);
-            } catch (error) {
-                console.error("Failed to fetch review form data", error);
-                setEmployeeName("Unknown Employee");
+                if (!res.ok) throw new Error(`Failed to fetch review cycles (status ${res.status})`);
+
+                const json: ApiResponse = await res.json();
+                setCycles(json.data || []);
+            } catch (err: any) {
+                console.error("Error fetching review cycles:", err);
+                setError(err.message || "Something went wrong.");
             } finally {
                 setLoading(false);
             }
         }
-        fetchData();
-    }, [employeeCode]);
 
-    const totalSteps = peers.length + 2;
-
-    const getStepTitle = () => {
-        if (currentStep === 0) return `Self Assessment: ${employeeName}`;
-        if (currentStep > 0 && currentStep <= peers.length)
-            return `Peer Review for ${peers[currentStep - 1].fullName}`;
-        return `Manager Review for ${managerName}`;
-    };
-
-    const getStepDescription = () => {
-        if (currentStep === 0)
-            return "Your self-assessment responses will be viewed by your manager.";
-        if (currentStep > 0 && currentStep <= peers.length)
-            return "Please provide constructive feedback for your peer.";
-        return "Employee feedback for your manager.";
-    };
-
-    const getCurrentQuestions = () => {
-        if (currentStep === 0) return QUESTIONS.self;
-        if (currentStep > 0 && currentStep <= peers.length) return QUESTIONS.peer;
-        return QUESTIONS.manager;
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setResponses((prev) => ({
-            ...prev,
-            [name]: value.slice(0, getCharLimitForQuestion(name)),
-        }));
-    };
-
-    const getCharLimitForQuestion = (name: string): number => {
-        const baseName = name.split('_')[0];
-
-        const allQuestions = [...QUESTIONS.self, ...QUESTIONS.peer, ...QUESTIONS.manager];
-        const q = allQuestions.find((q) => q.name === baseName);
-        return q?.charLimit || 250
-    };
-
-    const nextStep = () => {
-        if (currentStep < totalSteps - 1) setCurrentStep((s) => s + 1);
-    };
-    const prevStep = () => {
-        if (currentStep > 0) setCurrentStep((s) => s - 1);
-    };
-
-    const handleSubmit = async () => {
-        setIsSubmitting(true);
-
-        try {
-            const payload = {
-                employeeCode,
-                responses,
-            };
-            console.log("Submitting:", payload);
-            toast.success("Feedback submitted successfully! Thank you.");
-            setTimeout(() => {
-                router.push("/employee/dashboard"),
-                    setIsSubmitting(false);
-            }, 1000);
-        } catch {
-            toast.error("Error submitting feedback. Please try again.");
-            setIsSubmitting(false);
-        }
-    };
-
-    const renderCharCountAndProgress = (name: string) => {
-        const val = responses[name] || "";
-        const limit = getCharLimitForQuestion(name);
-        const percentage = Math.min((val.length / limit) * 100, 100);
-
-        let color = "bg-red-600";
-        if (percentage >= 80) color = "bg-green-600";
-        else if (percentage >= 40) color = "bg-yellow-400";
-
-        return (
-            <>
-                <div className="text-sm text-gray-600 mt-1">
-                    {val.length} / {limit} characters
-                </div>
-                <Progress
-                    value={percentage}
-                    className={`${color}`}
-                    style={{ backgroundColor: "#e5e7eb" }}
-                />
-            </>
-        );
-    };
-
-    const getQuestionName = (baseName: string, step: number) =>
-        step === 0 ? baseName : `${baseName}_${step}`;
+        fetchReviewCycles();
+    }, []);
 
     if (loading) {
-        return <ReviewFormSkeleton />;
-    };
+        return (
+            <div className="px-8 py-6">
+                <p className="text-gray-600">Loading review cycles…</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="px-8 py-6">
+                <p className="text-red-500">Error: {error}</p>
+            </div>
+        );
+    }
 
     return (
-        <Card className="max-w-4xl mx-auto p-8 pt-0">
-            <CardHeader>
-                <div className="flex flex-col items-center mb-16">
-                    <h1 className="text-4xl font-bold">Blips Employee Review</h1>
-                    <h2 className="text-3xl font-bold">Q3 & Q4 - 2024</h2>
-                </div>
-                <CardTitle className="text-2xl font-semibold">{getStepTitle()}</CardTitle>
-                <p className="text-gray-600 mt-1">{getStepDescription()}</p>
-            </CardHeader>
-            <CardContent>
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        if (currentStep === totalSteps - 1) handleSubmit();
-                        else nextStep();
-                    }}
-                    className="space-y-8"
-                >
-                    {getCurrentQuestions().map((q, i) => {
-                        const questionName = getQuestionName(q.name, currentStep);
-                        return (
-                            <div key={i} className="space-y-2">
-                                <label
-                                    htmlFor={questionName}
-                                    className="block font-semibold text-lg text-gray-800"
-                                >
-                                    {q.label}
-                                </label>
-                                <p className="text-gray-700">{q.description}</p>
-                                <Textarea
-                                    id={questionName}
-                                    name={questionName}
-                                    value={responses[questionName] || ""}
-                                    onChange={handleChange}
-                                    maxLength={q.charLimit}
-                                    rows={5}
-                                    className="mt-1"
-                                    placeholder={`Enter up to ${q.charLimit} characters...`}
-                                />
-                                {renderCharCountAndProgress(questionName)}
+        <Card className="px-8 py-6 space-y-6">
+            <h1 className="text-2xl font-semibold">Select a Review Cycle</h1>
+
+            {cycles.length === 0 ? (
+                <p className="text-gray-700">No active review cycles found.</p>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {cycles.map((cycle) => (
+                        <Card key={cycle.review_cycle_id} className="bg-white shadow-sm">
+                            <CardHeader className="flex flex-row justify-between items-end border-b py-3">
+                                <CardTitle className="text-lg font-semibold">{cycle.name}</CardTitle>
+                                <div className={cycle.is_active ? "text-sm bg-green-100 text-green-700 rounded-full px-2 py-1" : "text-sm bg-red-100 text-red-700 rounded-full px-2 py-1"}                                >
+                                    {cycle.is_active ? "Active" : "Inactive"}
+                                </div>
+                            </CardHeader>
+
+                            <CardContent className="space-y-2 pt-2 text-gray-700">
+                                <div>
+                                    <span className="font-medium">Cycle ID:</span> {cycle.review_cycle_id}
+                                </div>
+                                <div>
+                                    <span className="font-medium">Max Peer Selection:</span>{" "}
+                                    {cycle.max_peer_selection}
+                                </div>
+                                <div>
+                                    <span className="font-medium">Max Reviews Allowed:</span>{" "}
+                                    {cycle.max_reviews_allowed}
+                                </div>
+                                <div>
+                                    <span className="font-medium">Start Date:</span>{" "}
+                                    {new Date(cycle.start_date).toLocaleDateString()}
+                                </div>
+                                <div>
+                                    <span className="font-medium">End Date:</span>{" "}
+                                    {new Date(cycle.end_date).toLocaleDateString()}
+                                </div>
+                                <div>
+                                    <span className="font-medium">Peer Selection:</span>{" "}
+                                    {cycle.is_peer_selection_enabled ? "Enabled" : "Disabled"}
+                                </div>
+                                <div>
+                                    <span className="font-medium">Review:</span>{" "}
+                                    {cycle.is_review_enabled ? "Enabled" : "Disabled"}
+                                </div>
+                            </CardContent>
+
+                            <div className="px-6 pb-4">
+                                {cycle.is_review_enabled ? (
+                                    <Link href={`/employee/dashboard/review-form/${cycle.review_cycle_id}`} target={'_blank'}>
+                                        <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                                            Select
+                                        </Button>
+                                    </Link>
+                                ) : (
+                                    <Button
+                                        disabled
+                                        className="w-full bg-gray-300 text-gray-600 hover:bg-gray-300 cursor-not-allowed"
+                                        onClick={() =>
+                                            toast.error("Peer selection is not enabled by Company")
+                                        }
+                                    >
+                                        Review Form Disabled
+                                    </Button>
+                                )}
                             </div>
-                        );
-                    })}
-
-                    <div className="flex justify-between">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={prevStep}
-                            disabled={currentStep === 0}
-                        >
-                            Previous
-                        </Button>
-                        <Button type="submit" className="ml-auto" disabled={isSubmitting}>
-                            {currentStep === totalSteps - 1 ? "Submit" : "Next"}
-                        </Button>
-                    </div>
-                </form>
-            </CardContent>
-        </Card>
-    );
-}
-
-function ReviewFormSkeleton() {
-    return (
-        <Card className="max-w-4xl mx-auto p-8 pt-0 animate-pulse">
-            <CardHeader>
-                <div className="flex flex-col items-center mb-16 space-y-4">
-                    <div className="h-12 w-64 bg-gray-300 rounded"></div>
-                    <div className="h-10 w-48 bg-gray-300 rounded"></div>
+                        </Card>
+                    ))}
                 </div>
-                <CardTitle>
-                    <div className="h-8 w-64 bg-gray-300 rounded mb-2"></div>
-                </CardTitle>
-                <p className="h-4 w-96 bg-gray-300 rounded"></p>
-            </CardHeader>
-            <CardContent>
-                {[...Array(2)].map((_, i) => (
-                    <div key={i} className="space-y-2 mb-10">
-                        <div className="h-6 w-48 bg-gray-300 rounded"></div>
-                        <div className="h-4 w-80 bg-gray-300 rounded"></div>
-                        <div className="h-24 bg-gray-300 rounded"></div>
-                        <div className="h-4 w-64 bg-gray-300 rounded mt-2"></div>
-                        <div className="h-2 w-full bg-gray-300 rounded mt-1"></div>
-                    </div>
-                ))}
-                <div className="flex justify-between">
-                    <div className="h-10 w-24 bg-gray-300 rounded"></div>
-                    <div className="h-10 w-24 bg-gray-300 rounded"></div>
-                </div>
-            </CardContent>
+            )}
         </Card>
     );
 }

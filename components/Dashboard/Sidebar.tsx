@@ -1,8 +1,10 @@
 "use client";
 
+import React from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, ChevronLeft, ChevronRight } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, LogOut, User as UserIcon, } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface SidebarProps {
     collapsed: boolean;
@@ -15,11 +17,15 @@ interface SidebarProps {
     }>;
 }
 
-export default function Sidebar({ collapsed, onToggle, navItems }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggle, navItems, }: SidebarProps) {
     const pathname = usePathname();
+    const { user, logout } = useAuth();
 
     return (
-        <aside className={`fixed max-h-screen inset-y-0 left-0 bg-white border-r flex flex-col transition-[width] duration-200 ${collapsed ? "w-20" : "w-72"}`}>
+        <aside
+            className={`fixed inset-y-0 left-0 max-h-screen bg-white border-r flex flex-col transition-[width] duration-200 ${collapsed ? "w-20" : "w-72"
+                }`}
+        >
             {/* Logo + toggle */}
             <div className="p-6 flex items-center justify-between text-brand text-3xl font-bold">
                 {collapsed ? "E" : "Elevu"}
@@ -45,33 +51,52 @@ export default function Sidebar({ collapsed, onToggle, navItems }: SidebarProps)
                             key={href}
                             href={href}
                             target={target}
-                            className={`flex items-center p-2 rounded-md text-sm transition ${active ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-100"}              `}
-                        >
-                            <Icon className={`mr-3 h-5 w-5 transition ${active ? "text-blue-600" : "text-gray-500"}`} />
+                            className={`flex items-center p-2 rounded-md text-sm transition ${active ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-100"}`}>
+                            <Icon
+                                className={`mr-3 h-5 w-5 transition ${active ? "text-blue-600" : "text-gray-500"}`}
+                            />
                             {!collapsed && label}
                         </Link>
                     );
                 })}
             </nav>
 
-            {/* CTA or Home icon */}
-            {!collapsed ? (
-                <div className="p-4 mx-3 my-4 bg-slate-50 rounded-lg text-center">
-                    <h3 className="text-sm font-semibold">Empower Your Team</h3>
-                    <p className="text-xs text-gray-600 mt-1">
-                        Elevu makes 360° performance reviews simple with peer feedback and insights.
-                    </p>
-                    <Link href="/">
-                        <button className="mt-3 py-2 w-full bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
-                            Go to Homepage
-                        </button>
+            {/* User actions + Home */}
+            <div className="mt-auto px-2 py-3 border-t flex flex-col gap-2">
+                {!collapsed && user && (
+                    <div className="flex items-start gap-2 px-2.5 mb-2">
+                        <UserIcon className="h-5 w-5 text-gray-500" />
+                        <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-700 truncate">
+                                {user.name}
+                            </span>
+                            <span className="text-xs text-gray-500 truncate">
+                                {user.email}
+                            </span>
+                            <span className="text-xs text-gray-500 capitalize">
+                                {user.role}
+                            </span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Home button / icon */}
+                {!collapsed ? (
+                    <Link href="/" className="flex items-center px-2 py-2 mx-1 rounded hover:bg-gray-100 transition text-gray-700">
+                        <Home className="h-5 w-5 mr-3" />
+                        Home
                     </Link>
-                </div>
-            ) : (
-                <Link href="/" className="p-4 mx-3 my-4 hover:bg-gray-100 rounded-md text-center">
-                    <Home className="mr-3 h-5 w-5 text-gray-500" />
-                </Link>
-            )}
+                ) : (
+                    <Link href="/" className="p-2 mx-1 rounded hover:bg-gray-100 transition text-gray-700" aria-label="Home">
+                        <Home className="h-5 w-5" />
+                    </Link>
+                )}
+
+                <button onClick={logout} className="flex items-center px-2 py-2 mx-1 rounded hover:bg-gray-100 transition text-gray-700" aria-label="Logout">
+                    <LogOut className="h-5 w-5 mr-3" />
+                    {!collapsed && "Logout"}
+                </button>
+            </div>
         </aside>
     );
 }

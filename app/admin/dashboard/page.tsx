@@ -7,28 +7,37 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock, FileText, Hourglass, Loader, Users } from "lucide-react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import toast from "react-hot-toast";
-import { th } from "date-fns/locale";
 import Link from "next/link";
 
 type ReviewCycle = {
     id: string;
-    label: string
+    label: string;
+};
+
+type DashboardData = {
+    total_employees: number;
+    peer_selection: {
+        completed: number;
+        pending: number;
+    };
+    review: {
+        completed: number;
+        in_progress: number;
+        pending: number;
+    };
 };
 
 export default function AdminDashboardPage() {
-    // static stats for now
-    const totalEmployees = 37;
-    const selectionsCompleted = 32;
-    const pendingSelections = totalEmployees - selectionsCompleted;
-    const completedReviews = 28;
-    const inProgress = 0;
-    const pendingReviews = totalEmployees - completedReviews;
-
-    // new state for cycles + selection
+    // review cycles
     const [cycles, setCycles] = useState<ReviewCycle[]>([]);
     const [isLoadingCycles, setIsLoadingCycles] = useState(true);
     const [selectedCycle, setSelectedCycle] = useState("");
 
+    // dashboard data
+    const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+    const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
+
+    // fetch review cycles
     useEffect(() => {
         async function fetchCycles() {
             setIsLoadingCycles(true);
@@ -37,25 +46,66 @@ export default function AdminDashboardPage() {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-review-cycle`, {
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
+                        Authorization: `Bearer ${token}`,
                     },
                 });
-                if (!res.ok) throw new Error("Failed to fetch review cycles");
                 const json = await res.json();
-                const mapped = (json.data as any[]).map(item => ({
+                if (!json.success) throw new Error(json.message || "Failed to fetch review cycles");
+                const mapped = (json.data as any[]).map((item) => ({
                     id: String(item.review_cycle_id),
                     label: item.name,
                 }));
                 setCycles(mapped);
                 if (mapped.length) setSelectedCycle(mapped[0].id);
-            } catch (err) {
+            } catch (err: any) {
                 console.error(err);
+                toast.error(err.message || "Failed to fetch review cycles");
             } finally {
                 setIsLoadingCycles(false);
             }
         }
         fetchCycles();
     }, []);
+
+    // fetch dashboard for selected cycle
+    useEffect(() => {
+        if (!selectedCycle) return;
+        setIsLoadingDashboard(true);
+        async function fetchDashboard() {
+            try {
+                const token = localStorage.getItem("elevu_auth");
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-dashboard-data`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ review_cycle_id: Number(selectedCycle) }),
+                });
+                if (!res.ok) throw new Error("Failed to fetch dashboard data");
+                const json = await res.json();
+                if (json.success && json.data) {
+                    setDashboardData(json.data);
+                } else {
+                    throw new Error(json.message || "Failed to fetch dashboard data");
+                }
+            } catch (err: any) {
+                console.error(err);
+                toast.error(err.message || "Failed To Fetch Review Cycle Data");
+            } finally {
+                setIsLoadingDashboard(false);
+            }
+        }
+        fetchDashboard();
+    }, [selectedCycle]);
+
+    // derive stats (fallback to 0)
+    const totalEmployees = dashboardData?.total_employees ?? 0;
+    const selectionsCompleted = dashboardData?.peer_selection.completed ?? 0;
+    const pendingSelections = dashboardData?.peer_selection.pending ?? 0;
+    const completedReviews = dashboardData?.review.completed ?? 0;
+    const inProgress = dashboardData?.review.in_progress ?? 0;
+    const pendingReviews = dashboardData?.review.pending ?? 0;
 
     const handleAutoPair = async () => {
         if (!selectedCycle) return;
@@ -65,18 +115,12 @@ export default function AdminDashboardPage() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({ review_cycle_id: Number(selectedCycle) }),
             });
-
             const json = await res.json();
-
             if (!json.success) throw new Error(json.message || "Failed to start automated pairing");
-
-            console.log("Auto-pairing response:", json);
-            console.log("Auto-pairing started for cycle", selectedCycle);
-
             toast.success(json.message || "Automated pairing started successfully!");
         } catch (err) {
             console.error("Error during auto-pairing:", err);
@@ -85,6 +129,11 @@ export default function AdminDashboardPage() {
             }
         }
     };
+
+    // simple skeleton block
+    const Skeleton = ({ className = "" }: { className?: string }) => (
+        <div className={`${className} bg-gray-200 rounded animate-pulse`} />
+    );
 
     return (
         <div className="space-y-8 pb-8">
@@ -100,7 +149,10 @@ export default function AdminDashboardPage() {
                         ) : cycles.length === 0 ? (
                             <div className="flex flex-col items-start space-y-4">
                                 <p className="text-gray-500">No review cycles available.</p>
-                                <Link href={"/admin/dashboard/review-cycle"} className="py-2 px-5 w-fit bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition" >
+                                <Link
+                                    href={"/admin/dashboard/review-cycle"}
+                                    className="py-2 px-5 w-fit bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
+                                >
                                     Create Review Cycle
                                 </Link>
                             </div>
@@ -111,8 +163,12 @@ export default function AdminDashboardPage() {
                                     <SelectValue placeholder="Select review cycle" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {cycles.map(cycle => (
-                                        <SelectItem key={cycle.id} value={cycle.id} className="text-xs sm:text-sm 2xl:text-base">
+                                    {cycles.map((cycle) => (
+                                        <SelectItem
+                                            key={cycle.id}
+                                            value={cycle.id}
+                                            className="text-xs sm:text-sm 2xl:text-base"
+                                        >
                                             {cycle.label}
                                         </SelectItem>
                                     ))}
@@ -128,7 +184,11 @@ export default function AdminDashboardPage() {
                     </CardHeader>
                     <CardContent className="flex items-center space-x-2">
                         <Users className="h-6 w-6 text-blue-600" />
-                        <span className="text-4xl font-bold">{totalEmployees}</span>
+                        {isLoadingDashboard ? (
+                            <Skeleton className="w-16 h-8" />
+                        ) : (
+                            <span className="text-4xl font-bold">{totalEmployees}</span>
+                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -143,20 +203,35 @@ export default function AdminDashboardPage() {
                         <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                             <div>
                                 <p className="text-sm text-gray-500">Selections Completed</p>
-                                <p className="text-2xl font-semibold">{selectionsCompleted}</p>
+                                {isLoadingDashboard ? (
+                                    <Skeleton className="w-16 h-6 mt-2" />
+                                ) : (
+                                    <p className="text-2xl font-semibold">{selectionsCompleted}</p>
+                                )}
                             </div>
                             <CheckCircle2 className="h-6 w-6 text-blue-600" />
                         </div>
                         <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                             <div>
                                 <p className="text-sm text-gray-500">Pending Selections</p>
-                                <p className="text-2xl font-semibold">{pendingSelections}</p>
+                                {isLoadingDashboard ? (
+                                    <Skeleton className="w-16 h-6 mt-2" />
+                                ) : (
+                                    <p className="text-2xl font-semibold">{pendingSelections}</p>
+                                )}
                             </div>
                             <Clock className="h-6 w-6 text-blue-600" />
                         </div>
                     </div>
                     <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                        <Progress value={(selectionsCompleted / totalEmployees) * 100} className="flex h-2 rounded-full" />
+                        {isLoadingDashboard ? (
+                            <Skeleton className="w-full h-2" />
+                        ) : (
+                            <Progress
+                                value={(selectionsCompleted / (totalEmployees || 1)) * 100}
+                                className="flex h-2 rounded-full"
+                            />
+                        )}
                         <Button variant="outline" size="sm" onClick={handleAutoPair}>
                             <Users className="mr-2 h-4 w-4" />
                             Start Automated Pairing
@@ -175,31 +250,46 @@ export default function AdminDashboardPage() {
                         <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                             <div>
                                 <p className="text-sm text-gray-500">Completed Reviews</p>
-                                <p className="text-2xl font-semibold">{completedReviews}</p>
+                                {isLoadingDashboard ? (
+                                    <Skeleton className="w-16 h-6 mt-2" />
+                                ) : (
+                                    <p className="text-2xl font-semibold">{completedReviews}</p>
+                                )}
                             </div>
                             <CheckCircle2 className="h-6 w-6 text-blue-600" />
                         </div>
                         <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                             <div>
                                 <p className="text-sm text-gray-500">In Progress</p>
-                                <p className="text-2xl font-semibold">{inProgress}</p>
+                                {isLoadingDashboard ? (
+                                    <Skeleton className="w-16 h-6 mt-2" />
+                                ) : (
+                                    <p className="text-2xl font-semibold">{inProgress}</p>
+                                )}
                             </div>
                             <Loader className="h-6 w-6 text-blue-600" />
                         </div>
                         <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                             <div>
                                 <p className="text-sm text-gray-500">Pending Reviews</p>
-                                <p className="text-2xl font-semibold">{pendingReviews}</p>
+                                {isLoadingDashboard ? (
+                                    <Skeleton className="w-16 h-6 mt-2" />
+                                ) : (
+                                    <p className="text-2xl font-semibold">{pendingReviews}</p>
+                                )}
                             </div>
                             <Hourglass className="h-6 w-6 text-blue-600" />
                         </div>
                     </div>
                     <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                        <Progress value={(completedReviews / (totalEmployees * 3)) * 100} className="flex h-2 rounded-full" />
-                        <Button variant="outline" size="sm">
-                            <FileText className="mr-2 h-4 w-4" />
-                            Compile Reviews
-                        </Button>
+                        {isLoadingDashboard ? (
+                            <Skeleton className="w-full h-2" />
+                        ) : (
+                            <Progress
+                                value={(completedReviews / ((totalEmployees || 0) * 3)) * 100}
+                                className="flex h-2 rounded-full"
+                            />
+                        )}
                     </div>
                 </CardContent>
             </Card>

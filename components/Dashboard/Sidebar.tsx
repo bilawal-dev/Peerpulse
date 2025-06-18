@@ -82,7 +82,7 @@ export default function Sidebar({ collapsed, onToggle, navItems, }: SidebarProps
 
                 {/* Home button / icon */}
                 {!collapsed ? (
-                    <Link href="/" className="flex items-center px-2 py-2 mx-1 rounded hover:bg-gray-100 transition text-gray-700">
+                    <Link href="/" className="flex items-center text-sm px-2 py-2 mx-1 rounded hover:bg-gray-100 transition text-gray-700">
                         <Home className="h-5 w-5 mr-3" />
                         Home
                     </Link>
@@ -92,7 +92,7 @@ export default function Sidebar({ collapsed, onToggle, navItems, }: SidebarProps
                     </Link>
                 )}
 
-                <button onClick={logout} className="flex items-center px-2 py-2 mx-1 rounded hover:bg-gray-100 transition text-gray-700" aria-label="Logout">
+                <button onClick={logout} className="flex items-center text-sm px-2 py-2 mx-1 rounded hover:bg-gray-100 transition text-gray-700" aria-label="Logout">
                     <LogOut className="h-5 w-5 mr-3" />
                     {!collapsed && "Logout"}
                 </button>

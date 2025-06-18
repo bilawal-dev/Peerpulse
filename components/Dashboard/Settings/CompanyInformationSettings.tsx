@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, ImageIcon, X } from "lucide-react";
+import ButtonLoader from "@/components/Common/ButtonLoader";
+import toast from "react-hot-toast";
 
 export function CompanyInformationSettings() {
     // ─── Current “editable” states ────────────────────────────────────────────
@@ -21,6 +23,8 @@ export function CompanyInformationSettings() {
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoUrl, setLogoUrl] = useState<string>(""); // will hold existing logo URL from profile
     const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // ─── “Original” values for change detection ─────────────────────────────────
     const [originalName, setOriginalName] = useState<string>("");
@@ -35,16 +39,13 @@ export function CompanyInformationSettings() {
         async function fetchProfile() {
             try {
                 const token = localStorage.getItem("elevu_auth") || "";
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_SERVER_URL}/company/profile`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/profile`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
                 if (!res.ok) throw new Error("Failed to fetch company profile");
 
                 const json = await res.json();
@@ -129,6 +130,8 @@ export function CompanyInformationSettings() {
         if (!hasChanges) {
             return;
         }
+        
+        setIsSubmitting(true);
 
         try {
             const token = localStorage.getItem("elevu_auth") || "";
@@ -143,36 +146,29 @@ export function CompanyInformationSettings() {
                 formData.append("file", logoFile);
             }
 
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-profile`,
-                {
-                    method: "PUT",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        // ⚠️ Do NOT set Content-Type manually—browser handles multipart boundary.
-                    },
-                    body: formData,
-                }
-            );
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-profile`, {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                body: formData,
+            });
 
             if (!res.ok) {
                 const errJson = await res.json();
                 throw new Error(errJson.message || "Failed to update company profile");
             }
 
-            alert("Company information saved successfully!");
+            toast.success("Company information saved successfully!");
 
             // Re‐fetch profile so we pick up any new logo URL or other changes
-            const profileRes = await fetch(
-                `${process.env.NEXT_PUBLIC_SERVER_URL}/company/profile`,
-                {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+            const profileRes = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/profile`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
             if (!profileRes.ok) throw new Error("Failed to re-fetch profile");
             const profileJson = await profileRes.json();
             const company = profileJson.data;
@@ -200,7 +196,9 @@ export function CompanyInformationSettings() {
             setFilePreviewUrl(null);
         } catch (err) {
             console.error("Error saving company info:", err);
-            alert(`Failed to save. ${err}`);
+            toast.error(`Failed to save. ${err}`);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -305,8 +303,8 @@ export function CompanyInformationSettings() {
                 </div>
 
                 <div className="mt-6 flex justify-end space-x-4">
-                    <Button onClick={handleSaveAll} variant="default" disabled={!hasChanges}>
-                        Save
+                    <Button onClick={handleSaveAll} variant="default" disabled={!hasChanges || isSubmitting}>
+                        {isSubmitting ? <ButtonLoader /> : 'Save'}
                     </Button>
                 </div>
             </CardContent>

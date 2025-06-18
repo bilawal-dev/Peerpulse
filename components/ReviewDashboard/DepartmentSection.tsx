@@ -2,9 +2,9 @@ import React from "react";
 import ReviewCard from "./ReviewCard";
 
 interface Review { name: string; manager: string; status: "Completed" | "Pending" }
-interface Props { department: string; reviews: Review[] }
+interface Props { department: string; reviews: Review[]; reviewCycleId: number }
 
-export default function DepartmentSection({ department, reviews }: Props) {
+export default function DepartmentSection({ department, reviews, reviewCycleId }: Props) {
     const total = reviews.length;
     const completed = reviews.filter((r) => r.status === "Completed").length;
 
@@ -20,7 +20,7 @@ export default function DepartmentSection({ department, reviews }: Props) {
 
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                 {reviews.map((r) => (
-                    <ReviewCard key={r.name} review={r} />
+                    <ReviewCard key={r.name} review={r} reviewCycleId={reviewCycleId}/>
                 ))}
             </div>
         </section>

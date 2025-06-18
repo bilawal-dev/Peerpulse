@@ -1,128 +1,130 @@
-// File: src/components/reviews/ReviewsDashboardClient.tsx
+// File: components/reviews/ReviewsDashboardClient.tsx
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import ActionsBar from "./ActionsBar";
 import DepartmentSection from "./DepartmentSection";
 import SearchFilter from "./SearchFilter";
 import Image from "next/image";
+import toast from "react-hot-toast";
 
-interface EmployeeReview {
+interface Employee {
+    employee_id: number;
+    name: string;
+    manager: string | undefined;
+    is_review_completed: boolean;
+}
+interface RawDept {
+    department: string;
+    employees: Employee[];
+}
+interface ApiResponse {
+    success: boolean;
+    data: {
+        employees_data: RawDept[];
+        company: {
+            company_logo: string;
+            name: string;
+        }
+    };
+    message: string;
+}
+
+interface Props {
+    reviewCycleId: number;
+}
+
+// reuse the same Review type as DepartmentSection
+type Review = {
     name: string;
     manager: string;
     status: "Completed" | "Pending";
-}
+};
 
-interface DepartmentReviews {
-    department: string;
-    reviews: EmployeeReview[];
-}
+export default function ReviewsDashboardClient({ reviewCycleId }: Props) {
+    const [departments, setDepartments] = useState<RawDept[]>([]);
+    const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+    const [companyName, setCompanyName] = useState<string>("");
 
-const DATA: DepartmentReviews[] = [
-    {
-        department: "Business Operations",
-        reviews: [
-            { name: "Andrew Campbell", manager: "Cassidy Judd", status: "Completed" },
-            { name: "Brandon Tuttle", manager: "RJ Schultz", status: "Completed" },
-            { name: "Courtney Skinner", manager: "Andrew Campbell", status: "Completed" },
-            { name: "Joe Wilkinson", manager: "RJ Schultz", status: "Completed" },
-            { name: "Neil Johnson", manager: "RJ Schultz", status: "Completed" },
-            { name: "Sam Rivard", manager: "RJ Schultz", status: "Completed" },
-        ],
-    },
-    {
-        department: "Data and Finance",
-        reviews: [
-            { name: "Aubrey Bryant", manager: "Josh Manwaring", status: "Completed" },
-            { name: "Cassidy Judd", manager: "RJ Schultz", status: "Completed" },
-            { name: "Hemang Savla", manager: "Cassidy Judd", status: "Completed" },
-            { name: "Josh Manwaring", manager: "RJ Schultz", status: "Completed" },
-        ],
-    },
-    {
-        department: "Engineering",
-        reviews: [
-            { name: "Atul Tamgwe", manager: "Spencer Cook", status: "Completed" },
-            { name: "Jared Leishman", manager: "Spencer Cook", status: "Completed" },
-            { name: "Liang Zhou", manager: "Spencer Cook", status: "Completed" },
-            { name: "Maggie Cong", manager: "Spencer Cook", status: "Completed" },
-            { name: "Patrick Leishman", manager: "Spencer Cook", status: "Completed" },
-            { name: "Prem Kumar", manager: "Spencer Cook", status: "Completed" },
-            { name: "Spencer Cook", manager: "Cedric Bernard", status: "Completed" },
-            { name: "Taras Hrinycnych", manager: "Spencer Cook", status: "Completed" },
-        ],
-    },
-    {
-        department: "Executive",
-        reviews: [
-            { name: "Cedric Bernard", manager: "Unknown Manager", status: "Completed" },
-            { name: "RJ Schultz", manager: "Cedric Bernard", status: "Completed" },
-        ],
-    },
-    {
-        department: "Human Resources",
-        reviews: [{ name: "Aspen Egan", manager: "RJ Schultz", status: "Completed" }],
-    },
-    {
-        department: "Sales",
-        reviews: [
-            { name: "Aaron Kim", manager: "Christopher Farnkopf", status: "Completed" },
-            { name: "Bill Monan", manager: "Christopher Farnkopf", status: "Completed" },
-            { name: "Christopher Farnkopf", manager: "Cedric Bernard", status: "Completed" },
-            { name: "Christopher Trumble", manager: "Andrew Campbell", status: "Completed" },
-            { name: "Edward Andrews", manager: "Christopher Farnkopf", status: "Completed" },
-            { name: "John Pettit", manager: "Christopher Farnkopf", status: "Completed" },
-            { name: "Lex Faitanow", manager: "Christopher Farnkopf", status: "Completed" },
-            { name: "Mark Watson", manager: "Christopher Farnkopf", status: "Completed" },
-            { name: "Michael Eppich", manager: "RJ Schultz", status: "Completed" },
-            { name: "Taylor Lytle", manager: "Christopher Farnkopf", status: "Completed" },
-            { name: "Varsha Saravana", manager: "Christopher Farnkopf", status: "Completed" },
-        ],
-    },
-    {
-        department: "Supply",
-        reviews: [
-            { name: "Arnaud Becquart", manager: "Chad Smith", status: "Completed" },
-            { name: "Chad Smith", manager: "Cedric Bernard", status: "Completed" },
-            { name: "Chayla Leishman", manager: "Chad Smith", status: "Completed" },
-            { name: "Jacob Bradley", manager: "Chad Smith", status: "Completed" },
-            { name: "Rachel Breton", manager: "Chad Smith", status: "Completed" },
-        ],
-    },
-];
-
-export default function ReviewsDashboardClient() {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<"All" | "Completed" | "Pending">("All");
+    const [loading, setLoading] = useState(true);
 
+    // fetch compiled data
+    useEffect(() => {
+        async function load() {
+            setLoading(true);
+            try {
+                const token = localStorage.getItem("elevu_auth");
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-compile-review-data`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ review_cycle_id: reviewCycleId }),
+                });
+                const json: ApiResponse = await res.json();
+                if (!json.success) throw new Error(json.message || "Failed to load compiled reviews");
+                setDepartments(json.data.employees_data);
+                setCompanyLogo(json.data.company.company_logo);
+                setCompanyName(json.data.company.name);
+            } catch (err: any) {
+                console.error(err);
+                toast.error(err.message || "Error fetching compiled reviews");
+            } finally {
+                setLoading(false);
+            }
+        }
+        load();
+    }, [reviewCycleId]);
+
+    // transform & filter
     const filtered = useMemo(() => {
-        const term = search.toLowerCase();
-        return DATA.map((dept) => {
-            const deptMatches = dept.department.toLowerCase().includes(term);
-            const reviews = dept.reviews.filter((r) => {
-                const nameMatches = r.name.toLowerCase().includes(term);
-                const statusMatches = statusFilter === "All" || r.status === statusFilter;
-                return (deptMatches || nameMatches) && statusMatches;
+        const term = search.toLowerCase().trim();
+
+        return departments.map((d) => {
+            // first, map raw employees into the Review shape
+            const mapped: Review[] = d.employees.map((e) => ({
+                name: e.name,
+                manager: e.manager || '',
+                status: e.is_review_completed ? "Completed" : "Pending",
+            }));
+
+            // then filter by search & status
+            const reviews = mapped.filter((r) => {
+                const matchesSearch =
+                    term === "" ||
+                    r.name.toLowerCase().includes(term) ||
+                    d.department.toLowerCase().includes(term);
+                const matchesStatus = statusFilter === "All" || r.status === statusFilter;
+                return matchesSearch && matchesStatus;
             });
-            return { ...dept, reviews };
+
+            return { department: d.department, reviews };
         }).filter((d) => d.reviews.length > 0);
-    }, [search, statusFilter]);
+    }, [departments, search, statusFilter]);
 
     return (
-        <div className="bg-gray-50 min-h-screen p-8 max-sm:px-0">
+        <div className="bg-gray-50 min-h-screen p-8 pt-0 max-sm:px-0">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-16">
-                    <Image
-                        src="/assets/blip-logo.webp"
-                        alt="Blip Logo"
-                        className="mx-auto mb-8"
-                        width={192}
-                        height={48}
-                    />
-                    <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
-                        Performance Reviews Dashboard
+                    {companyLogo ? (
+                        <Image
+                            src={companyLogo}
+                            alt="Company Logo"
+                            className="mx-auto mb-2 mix-blend-multiply"
+                            width={192}
+                            height={48}
+                        />
+                    ) : null}
+                    <h1 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-2">
+                        {companyName}
                     </h1>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
+                        Performance Reviews Dashboard
+                    </h2>
                 </div>
 
                 {/* Search + Filter */}
@@ -137,8 +139,13 @@ export default function ReviewsDashboardClient() {
                 <ActionsBar />
 
                 {/* Departments */}
-                {filtered.map((dept) => (
-                    <DepartmentSection key={dept.department} {...dept} />
+                {loading ? null : filtered.map((dept) => (
+                    <DepartmentSection
+                        key={dept.department}
+                        department={dept.department}
+                        reviews={dept.reviews}
+                        reviewCycleId={reviewCycleId}
+                    />
                 ))}
             </div>
         </div>

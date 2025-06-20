@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 type ReviewResponse = {
     [questionKey: string]: string;
@@ -32,8 +33,8 @@ type Question = {
 export default function ReviewCycleReviewFormPage() {
     const pathname = usePathname();
     const router = useRouter();
-    const employeeCode = pathname.split("/").pop() || "";
-    const reviewCycleId = parseInt(employeeCode, 10);
+    const params = useParams();
+    const reviewCycleId = params?.reviewCycleId || "";
 
     const [fetchError, setFetchError] = useState(false);
 
@@ -160,7 +161,7 @@ export default function ReviewCycleReviewFormPage() {
             }
         }
         fetchData();
-    }, [employeeCode]);
+    }, [reviewCycleId]);
 
     const totalSteps = peers.length + 2;
 
@@ -248,7 +249,7 @@ export default function ReviewCycleReviewFormPage() {
 
             if (currentStep === totalSteps - 1) {
                 toast.success("All feedback submitted! Thank you.");
-                router.push("/employee/dashboard");
+                router.push(`/employee/dashboard/${reviewCycleId}`);
             } else {
                 setCurrentStep((s) => s + 1);
             }
@@ -290,16 +291,27 @@ export default function ReviewCycleReviewFormPage() {
             <Card className="p-8 text-center">
                 <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
                 <h2 className="text-2xl font-semibold mb-2">Something Went Wrong</h2>
-                <p className="text-lg text-gray-600">
+                <p className="text-lg text-gray-600 pb-5">
                     We couldn't load your review data right now. Please try again later or contact
                     support if the issue persists.
                 </p>
+                <Link href={`/employee/dashboard/${reviewCycleId}`}>
+                    <Button>
+                        Back To Dashboard
+                    </Button>
+                </Link>
             </Card>
         );
     }
 
     return (
         <Card className="max-w-4xl mx-auto p-8 pt-0">
+
+            {/* Back to Dashboard */}
+            <Link href={`/employee/dashboard/${reviewCycleId}`} className="absolute top-3 sm:top-8 left-3 sm:left-8 flex items-center gap-2 rounded-full bg-white border border-gray-300 p-2 sm:p-3 shadow hover:bg-gray-100 transition">
+                <ArrowLeft className="w-6 h-6 text-gray-700" />
+            </Link>
+
             <CardHeader>
                 <div className="flex flex-col items-center gap-2 mb-16">
                     <h1 className="text-3xl font-bold text-center">{companyName} Employee Review</h1>

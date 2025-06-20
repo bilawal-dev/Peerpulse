@@ -1,9 +1,9 @@
 "use client";
 
 import Sidebar from "@/components/Dashboard/Sidebar";
-import { usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { employeeNavItems } from "./navItems";
+import { getEmployeeNavItems } from "./navItems";
 import { useAuth } from "@/context/AuthContext";
 
 export default function EmployeeDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -11,12 +11,14 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
 
     const { user, loading } = useAuth();
 
+    const { reviewCycleId } = useParams();
+
     const router = useRouter();
-    
+
     const pathName = usePathname();
 
-    const reviewPath = pathName.startsWith('/employee/dashboard/review-form/') || pathName.startsWith('/employee/dashboard/performance-report/');
-    
+    const reviewPath = pathName.startsWith(`/employee/dashboard/${reviewCycleId}/review-form`) || pathName.startsWith(`/employee/dashboard/${reviewCycleId}/performance-report`);
+
     // * REDIRECT TO LOGIN IF USER IS NOT AUTHENTICATED OR TO ADMIN DASHBOARD IF NOT AN EMPLOYEE
     useEffect(() => {
         if (!loading) {
@@ -40,6 +42,9 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
             </main>
         )
     }
+
+    const prefix = `/employee/dashboard/${reviewCycleId}`;
+    const employeeNavItems = getEmployeeNavItems(prefix);
 
     return (
         <div className="min-h-screen flex bg-gray-50">

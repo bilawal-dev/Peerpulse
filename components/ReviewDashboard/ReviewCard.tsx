@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 
 interface Props {
-    review: { name: string; manager: string; status: string; }
+    review: { id:number; name: string; manager: string; status: string; }
     reviewCycleId: number
 }
 
@@ -14,7 +14,7 @@ export default function ReviewCard({ review, reviewCycleId }: Props) {
             <span className={`inline-block px-3 py-1 my-5 rounded-full text-xs font-medium ${review.status === "Completed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>
                 {review.status}
             </span>
-            <Link href={`/admin/dashboard/compiled-reviews/${reviewCycleId}/${review.name}`} className="view-button block w-fit bg-brand hover:bg-brand/90 text-white px-4 py-2 rounded-md text-sm font-medium">
+            <Link href={`/admin/dashboard/compiled-reviews/${reviewCycleId}/${review.id}`} className="view-button block w-fit bg-brand hover:bg-brand/90 text-white px-4 py-2 rounded-md text-sm font-medium">
                 View Review
             </Link>
         </div>

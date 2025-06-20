@@ -25,6 +25,9 @@ interface ApiResponse {
         company: {
             company_logo: string;
             name: string;
+        };
+        review_cycle: {
+            name: string;
         }
     };
     message: string;
@@ -36,6 +39,7 @@ interface Props {
 
 // reuse the same Review type as DepartmentSection
 type Review = {
+    id: number;
     name: string;
     manager: string;
     status: "Completed" | "Pending";
@@ -45,6 +49,7 @@ export default function ReviewsDashboardClient({ reviewCycleId }: Props) {
     const [departments, setDepartments] = useState<RawDept[]>([]);
     const [companyLogo, setCompanyLogo] = useState<string | null>(null);
     const [companyName, setCompanyName] = useState<string>("");
+    const [reviewCycleName, setReviewCycleName] = useState<string>("");
 
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<"All" | "Completed" | "Pending">("All");
@@ -69,6 +74,7 @@ export default function ReviewsDashboardClient({ reviewCycleId }: Props) {
                 setDepartments(json.data.employees_data);
                 setCompanyLogo(json.data.company.company_logo);
                 setCompanyName(json.data.company.name);
+                setReviewCycleName(json.data.review_cycle.name);
             } catch (err: any) {
                 console.error(err);
                 toast.error(err.message || "Error fetching compiled reviews");
@@ -87,6 +93,7 @@ export default function ReviewsDashboardClient({ reviewCycleId }: Props) {
             // first, map raw employees into the Review shape
             const mapped: Review[] = d.employees.map((e) => ({
                 name: e.name,
+                id: e.employee_id,
                 manager: e.manager || '',
                 status: e.is_review_completed ? "Completed" : "Pending",
             }));
@@ -113,10 +120,11 @@ export default function ReviewsDashboardClient({ reviewCycleId }: Props) {
                     {companyLogo ? (
                         <Image
                             src={companyLogo}
-                            alt="Company Logo"
-                            className="mx-auto mb-2 mix-blend-multiply"
-                            width={192}
-                            height={48}
+                            alt={`${companyName} Logo`}
+                            className="mx-auto mix-blend-multiply"
+                            width={200}
+                            height={50}
+                            priority
                         />
                     ) : null}
                     <h1 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-2">
@@ -125,6 +133,9 @@ export default function ReviewsDashboardClient({ reviewCycleId }: Props) {
                     <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
                         Performance Reviews Dashboard
                     </h2>
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-700">
+                        {reviewCycleName}
+                    </h3>
                 </div>
 
                 {/* Search + Filter */}

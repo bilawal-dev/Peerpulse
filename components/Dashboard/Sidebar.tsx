@@ -22,10 +22,7 @@ export default function Sidebar({ collapsed, onToggle, navItems, }: SidebarProps
     const { user, logout } = useAuth();
 
     return (
-        <aside
-            className={`fixed inset-y-0 left-0 max-h-screen bg-white border-r flex flex-col transition-[width] duration-200 ${collapsed ? "w-20" : "w-72"
-                }`}
-        >
+        <aside className={`fixed inset-y-0 left-0 max-h-screen bg-white border-r flex flex-col transition-[width] duration-200 ${collapsed ? "w-20" : "w-72"}`}>
             {/* Logo + toggle */}
             <div className="p-6 flex items-center justify-between text-brand text-3xl font-bold">
                 {collapsed ? "E" : "Elevu"}

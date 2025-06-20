@@ -15,7 +15,7 @@ export default function EmployeeDashboardLayout({ children }: { children: React.
     
     const pathName = usePathname();
 
-    const reviewPath = pathName.startsWith('/employee/dashboard/review-form/');
+    const reviewPath = pathName.startsWith('/employee/dashboard/review-form/') || pathName.startsWith('/employee/dashboard/performance-report/');
     
     // * REDIRECT TO LOGIN IF USER IS NOT AUTHENTICATED OR TO ADMIN DASHBOARD IF NOT AN EMPLOYEE
     useEffect(() => {

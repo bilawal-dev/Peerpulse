@@ -12,16 +12,20 @@ import EditReviewCycleSidebar, { EditCycleValues } from "@/components/Dashboard/
 import toast from "react-hot-toast";
 import ButtonLoader from "@/components/Common/ButtonLoader";
 
-type ReviewCycle = {
-    id: string;
-    label: string;
-    startDate: string;
-    endDate: string | null;
-    maxPeersSelect: number | null;
-    requiredPeerReviewers: number | null;
-    isPeerSelectionEnabled: boolean;
-    isReviewEnabled: boolean;
-};
+
+export interface ReviewCycle {
+    review_cycle_id: number;
+    name: string;
+    start_date: string;
+    end_date: string;
+    is_active: boolean;
+    max_peer_selection: number;
+    max_reviews_allowed: number;
+    is_peer_selection_enabled: boolean;
+    is_review_enabled: boolean;
+    created_at: string;
+    updated_at: string;
+}
 
 export default function DashboardReviewCyclePage() {
     const [cycles, setCycles] = useState<ReviewCycle[]>([]);
@@ -32,11 +36,11 @@ export default function DashboardReviewCyclePage() {
     // edit slide-over
     const [editOpen, setEditOpen] = useState(false);
     const [editInitial, setEditInitial] = useState<EditCycleValues | null>(null);
-    const [editId, setEditId] = useState<string | null>(null);
+    const [editId, setEditId] = useState<number | null>(null);
 
     // delete dialog
     const [deleteOpen, setDeleteOpen] = useState(false);
-    const [targetDeleteId, setTargetDeleteId] = useState<string | null>(null);
+    const [targetDeleteId, setTargetDeleteId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
@@ -53,19 +57,9 @@ export default function DashboardReviewCyclePage() {
                 },
             });
             if (!res.ok) throw new Error();
-            const json = await res.json();
-            setCycles(
-                (json.data as any[]).map((item) => ({
-                    id: String(item.review_cycle_id),
-                    label: item.name,
-                    startDate: item.start_date,
-                    endDate: item.end_date || null,
-                    maxPeersSelect: item.max_peer_selection,
-                    requiredPeerReviewers: item.max_reviews_allowed,
-                    isPeerSelectionEnabled: item.is_peer_selection_enabled,
-                    isReviewEnabled: item.is_review_enabled,
-                }))
-            );
+            const json = await res.json() as { data: ReviewCycle[] };
+            setCycles(json.data)
+
         } catch {
             toast.error("Failed to load cycles");
         } finally {
@@ -102,15 +96,15 @@ export default function DashboardReviewCyclePage() {
 
     // edit
     function openEdit(cycle: ReviewCycle) {
-        setEditId(cycle.id);
+        setEditId(cycle.review_cycle_id);
         setEditInitial({
-            label: cycle.label,
-            startDate: new Date(cycle.startDate),
-            endDate: cycle.endDate ? new Date(cycle.endDate) : undefined,
-            maxPeers: cycle.maxPeersSelect ?? undefined,
-            requiredReviewers: cycle.requiredPeerReviewers ?? undefined,
-            isPeerSelectionEnabled: cycle.isPeerSelectionEnabled,
-            isReviewEnabled: cycle.isReviewEnabled,
+            label: cycle.name,
+            startDate: new Date(cycle.start_date),
+            endDate: cycle.end_date ? new Date(cycle.end_date) : undefined,
+            maxPeers: cycle.max_peer_selection ?? undefined,
+            requiredReviewers: cycle.max_reviews_allowed ?? undefined,
+            isPeerSelectionEnabled: cycle.is_peer_selection_enabled,
+            isReviewEnabled: cycle.is_review_enabled,
         });
         setEditOpen(true);
     }
@@ -172,10 +166,11 @@ export default function DashboardReviewCyclePage() {
     }
 
     // delete
-    function openDelete(id: string) {
+    function openDelete(id: number) {
         setTargetDeleteId(id);
         setDeleteOpen(true);
     }
+
     async function handleDelete() {
         setDeleting(true);
         setDeleteOpen(false);
@@ -186,7 +181,7 @@ export default function DashboardReviewCyclePage() {
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ review_cycle_id: Number(targetDeleteId) }),
             });
-            setCycles(cycles => cycles.filter(cycle => cycle.id !== targetDeleteId));
+            setCycles(cycles => cycles.filter(cycle => cycle.review_cycle_id !== targetDeleteId));
             toast.success("Cycle deleted");
         } catch {
             toast.error("Delete failed");
@@ -240,7 +235,7 @@ export default function DashboardReviewCyclePage() {
                 <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 max-w-sm">
                     <DialogHeader><DialogTitle>Confirm Deletion</DialogTitle></DialogHeader>
                     <p className="mt-4 text-gray-700">
-                        Are you sure you want to delete cycle #{targetDeleteId}?
+                        Are you sure you want to delete review cycle #{targetDeleteId}?
                     </p>
                     <DialogFooter className="mt-6 flex justify-end space-x-2">
                         <Button variant="outline" onClick={() => setDeleteOpen(false)}>

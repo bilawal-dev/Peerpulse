@@ -70,14 +70,6 @@ export default function DashboardRoot() {
         })();
     }, []);
 
-    if (error) {
-        return (
-            <div className="p-8">
-                <p className="text-red-600 font-medium">{error}</p>
-            </div>
-        );
-    }
-
     // Stats
     const total = cycles.length;
     const activeCount = cycles.filter((c) => c.is_active).length;
@@ -91,6 +83,14 @@ export default function DashboardRoot() {
             return c.name.toLowerCase().includes(search.toLowerCase());
         });
     }, [cycles, filter, search]);
+
+    if (error) {
+        return (
+            <div className="p-8">
+                <p className="text-red-600 font-medium">{error}</p>
+            </div>
+        );
+    }
 
     return (
         <div className="p-8 space-y-6">

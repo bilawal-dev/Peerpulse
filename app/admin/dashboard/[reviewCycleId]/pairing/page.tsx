@@ -7,7 +7,8 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@radix-ui/react-tooltip"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import toast from "react-hot-toast"
-import { th } from "date-fns/locale"
+import { useParams } from "next/navigation"
+import { ReviewCycle } from "@/types/ReviewCycle"
 
 /** Zone item with assignment ID **/
 type ZoneItem = { code: string; assignmentId: number }
@@ -29,51 +30,52 @@ type Employee = {
 /** start empty; we'll fill via API **/
 const INITIAL_EMPLOYEES: Employee[] = []
 
-type ReviewCycle = {
-    id: string
-    label: string
-    maxReviewsAllowed: number
-}
 
 export default function DashboardPairingPage() {
     const [allEmps, setAllEmps] = useState<Employee[]>(INITIAL_EMPLOYEES)
     const [currentCode, setCurrentCode] = useState<string | null>(null)
 
-    const [cycles, setCycles] = useState<ReviewCycle[]>([])
-    const [isLoadingCycles, setIsLoadingCycles] = useState(true)
-    const [selectedCycle, setSelectedCycle] = useState<string>("")
+    // single cycle state (pulled from params)
+    const { reviewCycleId } = useParams()
+    
+    const [currentCycle, setCurrentCycle] = useState<{ id: string, label: string, maxReviewsAllowed: number }>({ id: "", label: "", maxReviewsAllowed: 0 })
+    const [isLoadingCycle, setIsLoadingCycle] = useState(true)
+    // we’ll use this to drive all the POST bodies
+    const selectedCycle = currentCycle.id
 
-    const currentCycle = cycles.find((c) => c.id === selectedCycle)
 
-    // Fetch review cycles once
+    // Fetch the single review‐cycle by ID
     useEffect(() => {
-        async function fetchCycles() {
-            setIsLoadingCycles(true)
+        if (!reviewCycleId) return
+        setIsLoadingCycle(true);
+
+        (async () => {
             try {
                 const token = localStorage.getItem("elevu_auth")
-                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-review-cycle`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-review-cycle-by-id`, {
+                    method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
+                    body: JSON.stringify({ review_cycle_id: Number(reviewCycleId) }),
                 })
-                if (!res.ok) throw new Error("Failed to fetch review cycles")
-                const json = await res.json()
-                const mapped = (json.data as any[]).map((item) => ({
-                    id: String(item.review_cycle_id),
-                    label: item.name,
-                    maxReviewsAllowed: item.max_reviews_allowed ?? 0,
-                }))
-                setCycles(mapped)
-                if (mapped.length) setSelectedCycle(mapped[0].id)
-            } catch (err) {
+                if (!res.ok) throw new Error("Failed to fetch cycle")
+                const json = await res.json() as { success: boolean; data: ReviewCycle; message: string };
+                const d = json.data
+                setCurrentCycle({
+                    id: String(d.review_cycle_id),
+                    label: d.name,
+                    maxReviewsAllowed: d.max_reviews_allowed,
+                })
+            } catch (err: any) {
                 console.error(err)
+                toast.error(err.message || "Could not load review cycle")
             } finally {
-                setIsLoadingCycles(false)
+                setIsLoadingCycle(false)
             }
-        }
-        fetchCycles()
-    }, [])
+        })()
+    }, [reviewCycleId])
 
     // Fetch employees whenever selectedCycle changes
     useEffect(() => {
@@ -121,20 +123,17 @@ export default function DashboardPairingPage() {
         if (!selectedCycle) return
         try {
             const token = localStorage.getItem("elevu_auth")
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-review-assignments`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                        review_cycle_id: Number(selectedCycle),
-                        employee_id: Number(empCode),
-                    }),
-                }
-            )
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-review-assignments`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    review_cycle_id: Number(selectedCycle),
+                    employee_id: Number(empCode),
+                }),
+            })
             if (!res.ok) throw new Error("Failed to fetch review assignments")
             const json = await res.json()
             const { review_by, will_review } = json.data
@@ -165,20 +164,17 @@ export default function DashboardPairingPage() {
         if (!selectedCycle) return
         try {
             const token = localStorage.getItem("elevu_auth")
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-peer-selection-list-by-employee`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                        review_cycle_id: Number(selectedCycle),
-                        employee_id: Number(empCode),
-                    }),
-                }
-            )
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-peer-selection-list-by-employee`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    review_cycle_id: Number(selectedCycle),
+                    employee_id: Number(empCode),
+                }),
+            })
             if (!res.ok) throw new Error("Failed to fetch peer selections")
             const json = await res.json()
             const { i_selected, i_selected_by_others } = json.data
@@ -485,23 +481,11 @@ export default function DashboardPairingPage() {
                         </TooltipProvider>
                     </div>
 
-                    {isLoadingCycles ? (
-                        <p className="text-sm text-gray-500">Loading cycles…</p>
-                    ) : cycles.length === 0 ? (
-                        <p className="text-base text-red-500">No review cycles found. Create one first.</p>
+                    {/* {isLoadingCycle ? (
+                        <p className="text-sm text-gray-500">Loading review cycle…</p>
                     ) : (
-                        <Select value={selectedCycle} onValueChange={setSelectedCycle}>
-                            <h1 className="font-medium">Select Review Cycle</h1>
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select review cycle" className="font-semibold" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {cycles.map((c) => (
-                                    <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
+                        <h1 className="text-2xl font-semibold pb-2">{currentCycle.label}</h1>
+                    )} */}
 
                     <div className="px-4 py-2 bg-blue-50 rounded-md text-blue-800">
                         Currently working on:{" "}

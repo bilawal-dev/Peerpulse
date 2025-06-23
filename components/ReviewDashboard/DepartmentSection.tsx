@@ -1,7 +1,7 @@
 import React from "react";
 import ReviewCard from "./ReviewCard";
 
-interface Review { id:number, name: string; manager: string; status: "Completed" | "Pending" }
+interface Review { employeeId:number, name: string; manager: string; status: "Completed" | "Pending" }
 interface Props { department: string; reviews: Review[]; reviewCycleId: number }
 
 export default function DepartmentSection({ department, reviews, reviewCycleId }: Props) {

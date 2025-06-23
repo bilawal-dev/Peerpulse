@@ -37,7 +37,7 @@ function getInitials(name = "") {
     );
 }
 
-export default function DashboardRoot() {
+export default function EmployeeDashboardRoot() {
     const { user, logout } = useAuth();
     const [cycles, setCycles] = useState<ReviewCycle[]>([]);
     const [loading, setLoading] = useState(true);

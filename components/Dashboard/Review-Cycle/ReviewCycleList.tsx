@@ -3,7 +3,8 @@ import { format } from "date-fns";
 import { Trash2, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { ReviewCycle } from "@/app/admin/dashboard/review-cycle/page";
+import { ReviewCycle } from "@/app/admin/dashboard/[reviewCycleId]/review-cycle/page";
+import Link from "next/link";
 
 
 interface ReviewCycleListProps {
@@ -91,24 +92,31 @@ export default function ReviewCycleList({ cycles, onEdit, onDelete, }: ReviewCyc
                         </div>
 
                         {/* Actions */}
-                        <div className="mt-auto flex justify-end space-x-2 pt-4 border-t-2 border-gray-100">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => onEdit(cycle)}
-                                aria-label="Edit cycle"
-                            >
-                                <Edit2 className="h-5 w-5 text-blue-500" />
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => onDelete(cycle.review_cycle_id)}
-                                aria-label="Delete cycle"
-                            >
-                                <Trash2 className="h-5 w-5 text-red-500" />
-                            </Button>
+                        <div className="flex pt-4 justify-between items-center">
+                            <Link href={`/admin/dashboard/${cycle.review_cycle_id}/`}>
+                                <Button>Enter Review Cycle</Button>
+                            </Link>
+
+                            <div className="border-t-2 border-gray-100">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => onEdit(cycle)}
+                                    aria-label="Edit cycle"
+                                >
+                                    <Edit2 className="h-5 w-5 text-blue-500" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => onDelete(cycle.review_cycle_id)}
+                                    aria-label="Delete cycle"
+                                >
+                                    <Trash2 className="h-5 w-5 text-red-500" />
+                                </Button>
+                            </div>
                         </div>
+
                     </CardContent>
                 </Card>
             ))}

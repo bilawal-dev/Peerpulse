@@ -39,7 +39,7 @@ interface Props {
 
 // reuse the same Review type as DepartmentSection
 type Review = {
-    id: number;
+    employeeId: number;
     name: string;
     manager: string;
     status: "Completed" | "Pending";
@@ -93,7 +93,7 @@ export default function ReviewsDashboardClient({ reviewCycleId }: Props) {
             // first, map raw employees into the Review shape
             const mapped: Review[] = d.employees.map((e) => ({
                 name: e.name,
-                id: e.employee_id,
+                employeeId: e.employee_id,
                 manager: e.manager || '',
                 status: e.is_review_completed ? "Completed" : "Pending",
             }));

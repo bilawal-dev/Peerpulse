@@ -1,298 +1,264 @@
+// app/employee/dashboard/review-cycles/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock, FileText, Hourglass, Loader, Users } from "lucide-react";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { PlusCircle, Trash2 } from "lucide-react";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, } from "@/components/ui/dialog";
+import ReviewCycleList from "@/components/Dashboard/Review-Cycle/ReviewCycleList";
+import AddReviewCycleSidebar, { NewCycleValues } from "@/components/Dashboard/Review-Cycle/AddReviewCycleSidebar";
+import EditReviewCycleSidebar, { EditCycleValues } from "@/components/Dashboard/Review-Cycle/EditReviewCycleSidebar";
 import toast from "react-hot-toast";
-import Link from "next/link";
+import ButtonLoader from "@/components/Common/ButtonLoader";
+import { ReviewCycle } from "@/types/ReviewCycle";
 
-type ReviewCycle = {
-    id: string;
-    label: string;
-};
 
-type DashboardData = {
-    total_employees: number;
-    peer_selection: {
-        completed: number;
-        pending: number;
-    };
-    review: {
-        completed: number;
-        in_progress: number;
-        pending: number;
-    };
-};
-
-export default function AdminDashboardPage() {
-    // review cycles
+export default function AdminDashboardRoot() {
     const [cycles, setCycles] = useState<ReviewCycle[]>([]);
-    const [isLoadingCycles, setIsLoadingCycles] = useState(true);
-    const [selectedCycle, setSelectedCycle] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
 
-    // dashboard data
-    const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-    const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
+    // add slide-over
+    const [addOpen, setAddOpen] = useState(false);
+    // edit slide-over
+    const [editOpen, setEditOpen] = useState(false);
+    const [editInitial, setEditInitial] = useState<EditCycleValues | null>(null);
+    const [editId, setEditId] = useState<number | null>(null);
 
-    // fetch review cycles
+    // delete dialog
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [targetDeleteId, setTargetDeleteId] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
     useEffect(() => {
-        async function fetchCycles() {
-            setIsLoadingCycles(true);
-            try {
-                const token = localStorage.getItem("elevu_auth");
-                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-review-cycle`, {
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                const json = await res.json();
-                if (!json.success) throw new Error(json.message || "Failed to fetch review cycles");
-                const mapped = (json.data as any[]).map((item) => ({
-                    id: String(item.review_cycle_id),
-                    label: item.name,
-                }));
-                setCycles(mapped);
-                if (mapped.length) setSelectedCycle(mapped[0].id);
-            } catch (err: any) {
-                console.error(err);
-                toast.error(err.message || "Failed to fetch review cycles");
-            } finally {
-                setIsLoadingCycles(false);
-            }
-        }
-        fetchCycles();
+        fetchAllCycles();
     }, []);
 
-    // fetch dashboard for selected cycle
-    useEffect(() => {
-        if (!selectedCycle) return;
-        setIsLoadingDashboard(true);
-        async function fetchDashboard() {
-            try {
-                const token = localStorage.getItem("elevu_auth");
-                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-dashboard-data`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({ review_cycle_id: Number(selectedCycle) }),
-                });
-                if (!res.ok) throw new Error("Failed to fetch dashboard data");
-                const json = await res.json();
-                if (json.success && json.data) {
-                    setDashboardData(json.data);
-                } else {
-                    throw new Error(json.message || "Failed to fetch dashboard data");
-                }
-            } catch (err: any) {
-                console.error(err);
-                toast.error(err.message || "Failed To Fetch Review Cycle Data");
-            } finally {
-                setIsLoadingDashboard(false);
-            }
-        }
-        fetchDashboard();
-    }, [selectedCycle]);
-
-    // derive stats (fallback to 0)
-    const totalEmployees = dashboardData?.total_employees ?? 0;
-    const selectionsCompleted = dashboardData?.peer_selection.completed ?? 0;
-    const pendingSelections = dashboardData?.peer_selection.pending ?? 0;
-    const completedReviews = dashboardData?.review.completed ?? 0;
-    const inProgress = dashboardData?.review.in_progress ?? 0;
-    const pendingReviews = dashboardData?.review.pending ?? 0;
-
-    const handleAutoPair = async () => {
-        if (!selectedCycle) return;
+    async function fetchAllCycles() {
+        setIsLoading(true);
         try {
             const token = localStorage.getItem("elevu_auth");
-            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/auto-peer-selection`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-review-cycle`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+            });
+            if (!res.ok) throw new Error();
+            const json = await res.json() as { data: ReviewCycle[] };
+            setCycles(json.data)
+
+        } catch {
+            toast.error("Failed to load cycles");
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    // create
+    function openAdd() {
+        setAddOpen(true);
+    }
+    async function handleAdd(vals: NewCycleValues) {
+        try {
+            const token = localStorage.getItem("elevu_auth");
+            await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/add-review-cycle`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                    name: vals.label,
+                    start_date: vals.startDate.toISOString(),
+                    end_date: (vals.endDate || vals.startDate).toISOString(),
+                    max_peer_selection: vals.maxPeers || 0,
+                    max_reviews_allowed: vals.requiredReviewers || 0,
+                }),
+            });
+            toast.success("Cycle created");
+            await fetchAllCycles();
+        } catch {
+            toast.error("Failed to create cycle");
+        } finally {
+            setAddOpen(false);
+        }
+    }
+
+    // edit
+    function openEdit(cycle: ReviewCycle) {
+        setEditId(cycle.review_cycle_id);
+        setEditInitial({
+            label: cycle.name,
+            startDate: new Date(cycle.start_date),
+            endDate: cycle.end_date ? new Date(cycle.end_date) : undefined,
+            maxPeers: cycle.max_peer_selection ?? undefined,
+            requiredReviewers: cycle.max_reviews_allowed ?? undefined,
+            isPeerSelectionEnabled: cycle.is_peer_selection_enabled,
+            isReviewEnabled: cycle.is_review_enabled,
+        });
+        setEditOpen(true);
+    }
+    async function handleEdit(vals: EditCycleValues) {
+        try {
+            const token = localStorage.getItem("elevu_auth");
+
+            // 1) core update
+            await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-review-cycle`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    review_cycle_id: Number(editId),
+                    name: vals.label,
+                    start_date: vals.startDate.toISOString(),
+                    end_date: (vals.endDate || vals.startDate).toISOString(),
+                    max_peer_selection: vals.maxPeers || 0,
+                    max_reviews_allowed: vals.requiredReviewers || 0,
+                }),
+            }
+            );
+
+            // 2) peer-selection toggle
+            await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-peer-selection-status`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ review_cycle_id: Number(selectedCycle) }),
+                body: JSON.stringify({
+                    review_cycle_id: Number(editId),
+                    is_peer_selection_enabled: vals.isPeerSelectionEnabled,
+                }),
             });
-            const json = await res.json();
-            if (!json.success) throw new Error(json.message || "Failed to start automated pairing");
-            toast.success(json.message || "Automated pairing started successfully!");
-        } catch (err) {
-            console.error("Error during auto-pairing:", err);
-            if (err instanceof Error) {
-                toast.error(err.message || "An error occurred while starting automated pairing.");
-            }
-        }
-    };
 
-    // simple skeleton block
-    const Skeleton = ({ className = "" }: { className?: string }) => (
-        <div className={`${className} bg-gray-200 rounded animate-pulse`} />
-    );
+            // 3) review toggle
+            await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-review-status`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    review_cycle_id: Number(editId),
+                    is_review_enabled: vals.isReviewEnabled,
+                }),
+            });
+
+            toast.success("Cycle updated");
+            await fetchAllCycles();
+        } catch {
+            toast.error("Failed to update cycle");
+        } finally {
+            setEditOpen(false);
+        }
+    }
+
+    // delete
+    function openDelete(id: number) {
+        setTargetDeleteId(id);
+        setDeleteOpen(true);
+    }
+
+    async function handleDelete() {
+        setDeleting(true);
+        setDeleteOpen(false);
+        try {
+            const token = localStorage.getItem("elevu_auth");
+            await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/delete-review-cycle`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ review_cycle_id: Number(targetDeleteId) }),
+            });
+            setCycles(cycles => cycles.filter(cycle => cycle.review_cycle_id !== targetDeleteId));
+            toast.success("Cycle deleted");
+        } catch {
+            toast.error("Delete failed");
+        } finally {
+            setDeleting(false);
+        }
+    }
 
     return (
         <div className="space-y-8 pb-8">
-            {/* ─── Stats Row ─── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-xl">Peer Review Dashboard</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {isLoadingCycles ? (
-                            <p>Loading Review Cycles…</p>
-                        ) : cycles.length === 0 ? (
-                            <div className="flex flex-col items-start space-y-4">
-                                <p className="text-gray-500">No review cycles available.</p>
-                                <Link
-                                    href={"/admin/dashboard/review-cycle"}
-                                    className="py-2 px-5 w-fit bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
-                                >
-                                    Create Review Cycle
-                                </Link>
-                            </div>
-                        ) : (
-                            <Select value={selectedCycle} onValueChange={setSelectedCycle}>
-                                <h1 className="pb-2 font-medium">Select Review Cycle</h1>
-                                <SelectTrigger className="w-full text-sm sm:text-base 2xl:text-lg font-medium text-left h-fit items-start">
-                                    <SelectValue placeholder="Select review cycle" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {cycles.map((cycle) => (
-                                        <SelectItem
-                                            key={cycle.id}
-                                            value={cycle.id}
-                                            className="text-xs sm:text-sm 2xl:text-base"
-                                        >
-                                            {cycle.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Total Employees</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex items-center space-x-2">
-                        <Users className="h-6 w-6 text-blue-600" />
-                        {isLoadingDashboard ? (
-                            <Skeleton className="w-16 h-8" />
-                        ) : (
-                            <span className="text-4xl font-bold">{totalEmployees}</span>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* ─── Peer Selection Progress ─── */}
-            <Card className="space-y-6">
-                <CardHeader>
-                    <CardTitle className="text-xl">Peer Selection Progress</CardTitle>
+            <Card>
+                <CardHeader className="flex flex-row justify-between items-center">
+                    <h2 className="text-2xl font-semibold">Review Cycles</h2>
+                    <Button onClick={openAdd} className="flex items-center bg-blue-600 hover:bg-blue-700">
+                        <PlusCircle className="mr-2 h-5 w-5" /> Create New
+                    </Button>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-                            <div>
-                                <p className="text-sm text-gray-500">Selections Completed</p>
-                                {isLoadingDashboard ? (
-                                    <Skeleton className="w-16 h-6 mt-2" />
-                                ) : (
-                                    <p className="text-2xl font-semibold">{selectionsCompleted}</p>
-                                )}
-                            </div>
-                            <CheckCircle2 className="h-6 w-6 text-blue-600" />
-                        </div>
-                        <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-                            <div>
-                                <p className="text-sm text-gray-500">Pending Selections</p>
-                                {isLoadingDashboard ? (
-                                    <Skeleton className="w-16 h-6 mt-2" />
-                                ) : (
-                                    <p className="text-2xl font-semibold">{pendingSelections}</p>
-                                )}
-                            </div>
-                            <Clock className="h-6 w-6 text-blue-600" />
-                        </div>
-                    </div>
-                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                        {isLoadingDashboard ? (
-                            <Skeleton className="w-full h-2" />
-                        ) : (
-                            <Progress
-                                value={(selectionsCompleted / (totalEmployees || 1)) * 100}
-                                className="flex h-2 rounded-full"
-                            />
-                        )}
-                        <Button variant="outline" size="sm" onClick={handleAutoPair}>
-                            <Users className="mr-2 h-4 w-4" />
-                            Start Automated Pairing
+
+                <CardContent>
+                    {isLoading ? <ReviewCyclesSkeleton /> : (
+                        <ReviewCycleList
+                            cycles={cycles}
+                            onEdit={openEdit}
+                            onDelete={openDelete}
+                        />
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Add */}
+            <Dialog open={addOpen} onOpenChange={setAddOpen}>
+                <DialogTrigger asChild><div hidden /></DialogTrigger>
+                <AddReviewCycleSidebar onCancel={() => setAddOpen(false)} onSubmit={handleAdd} />
+            </Dialog>
+
+            {/* Edit */}
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <DialogTrigger asChild><div hidden /></DialogTrigger>
+                {editInitial && (
+                    <EditReviewCycleSidebar
+                        initial={editInitial}
+                        onCancel={() => setEditOpen(false)}
+                        onSubmit={handleEdit}
+                    />
+                )}
+            </Dialog>
+
+            {/* Delete */}
+            <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                <DialogTrigger asChild><div hidden /></DialogTrigger>
+                <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 max-w-sm">
+                    <DialogHeader><DialogTitle>Confirm Deletion</DialogTitle></DialogHeader>
+                    <p className="mt-4 text-gray-700">
+                        Are you sure you want to delete review cycle #{targetDeleteId}?
+                    </p>
+                    <DialogFooter className="mt-6 flex justify-end space-x-2">
+                        <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+                            Cancel
                         </Button>
-                    </div>
-                </CardContent>
-            </Card>
+                        <Button
+                            disabled={deleting}
+                            onClick={handleDelete}
+                            className="bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                        >
+                            {deleting ? <ButtonLoader /> : <Trash2 className="mr-2 h-5 w-5" />}
+                            Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+}
 
-            {/* ─── Survey Progress ─── */}
-            <Card className="space-y-6">
-                <CardHeader>
-                    <CardTitle className="text-xl">Survey Progress</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-                            <div>
-                                <p className="text-sm text-gray-500">Completed Reviews</p>
-                                {isLoadingDashboard ? (
-                                    <Skeleton className="w-16 h-6 mt-2" />
-                                ) : (
-                                    <p className="text-2xl font-semibold">{completedReviews}</p>
-                                )}
-                            </div>
-                            <CheckCircle2 className="h-6 w-6 text-blue-600" />
-                        </div>
-                        <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-                            <div>
-                                <p className="text-sm text-gray-500">In Progress</p>
-                                {isLoadingDashboard ? (
-                                    <Skeleton className="w-16 h-6 mt-2" />
-                                ) : (
-                                    <p className="text-2xl font-semibold">{inProgress}</p>
-                                )}
-                            </div>
-                            <Loader className="h-6 w-6 text-blue-600" />
-                        </div>
-                        <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-                            <div>
-                                <p className="text-sm text-gray-500">Pending Reviews</p>
-                                {isLoadingDashboard ? (
-                                    <Skeleton className="w-16 h-6 mt-2" />
-                                ) : (
-                                    <p className="text-2xl font-semibold">{pendingReviews}</p>
-                                )}
-                            </div>
-                            <Hourglass className="h-6 w-6 text-blue-600" />
-                        </div>
-                    </div>
-                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                        {isLoadingDashboard ? (
-                            <Skeleton className="w-full h-2" />
-                        ) : (
-                            <Progress
-                                value={(completedReviews / ((totalEmployees || 0) * 3)) * 100}
-                                className="flex h-2 rounded-full"
-                            />
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
+function ReviewCyclesSkeleton() {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+            {Array.from({ length: 5 }).map((_, idx) => (
+                <Card key={idx} className="h-64 border border-gray-200 bg-gray-100">
+                    <CardHeader />
+                    <CardContent className="space-y-4">
+                        <div className="h-4 bg-gray-300 rounded w-3/4" />
+                        <div className="h-4 bg-gray-300 rounded w-1/2" />
+                        <div className="h-4 bg-gray-300 rounded w-5/6" />
+                        <div className="h-4 bg-gray-300 rounded w-3/4" />
+                        <div className="h-4 bg-gray-300 rounded w-1/2" />
+                        <div className="h-4 bg-gray-300 rounded w-5/6" />
+                    </CardContent>
+                </Card>
+            ))}
         </div>
     );
 }

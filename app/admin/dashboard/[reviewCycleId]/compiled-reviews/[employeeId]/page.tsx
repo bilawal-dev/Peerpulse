@@ -104,7 +104,7 @@ export default function EmployeeCompiledReviewsPage() {
         <div className="bg-gray-50 min-h-screen p-8 pt-0 max-sm:px-0">
             <div className="review-container max-w-4xl mx-auto">
                 {/* Back to Dashboard */}
-                <Link href={`/admin/dashboard/compiled-reviews/${reviewCycleId}`} className="absolute top-3 sm:top-8 left-3 sm:left-8 flex items-center gap-2 rounded-full bg-white border border-gray-300 p-2 sm:p-3 shadow hover:bg-gray-100 transition">
+                <Link href={`/admin/dashboard/${reviewCycleId}/compiled-reviews`} className="absolute top-3 sm:top-8 left-3 sm:left-8 flex items-center gap-2 rounded-full bg-white border border-gray-300 p-2 sm:p-3 shadow hover:bg-gray-100 transition">
                     <ArrowLeft className="w-6 h-6 text-gray-700" />
                 </Link>
 

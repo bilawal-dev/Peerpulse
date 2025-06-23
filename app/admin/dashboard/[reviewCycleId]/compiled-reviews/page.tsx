@@ -5,7 +5,7 @@ interface PageProps {
 }
 
 export default function CycleCompiledReviewPage({ params }: PageProps) {
-    const cycleId = Number(params.reviewCycleId);
+    const reviewCycleId = Number(params.reviewCycleId);
 
-    return <ReviewsDashboardClient reviewCycleId={cycleId} />;
+    return <ReviewsDashboardClient reviewCycleId={reviewCycleId} />;
 }

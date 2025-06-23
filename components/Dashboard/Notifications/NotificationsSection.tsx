@@ -5,9 +5,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CalendarClock } from "lucide-react";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import toast from "react-hot-toast";
 import ButtonLoader from "@/components/Common/ButtonLoader";
+import { useParams } from "next/navigation";
+import { ReviewCycle } from "@/types/ReviewCycle";
 
 const notifSections = [
     {
@@ -42,9 +43,11 @@ type ReminderData = {
 };
 
 export default function NotificationSection() {
-    const [cycles, setCycles] = useState<{ id: string; label: string; startDate: string; endDate: string | null }[]>([]);
-    const [selectedCycle, setSelectedCycle] = useState<string>("");
-    const [selectedCycleDetails, setSelectedCycleDetails] = useState<{ startDate: string; endDate: string | null } | null>(null);
+    // grab the ID straight from the URL
+    const { reviewCycleId } = useParams();
+
+    const [cycleDetails, setCycleDetails] = useState<{ id: number | null, label: string; startDate: string; endDate: string | null; }>({ id: null, label: "", startDate: "", endDate: null });
+    const [isLoadingCycle, setIsLoadingCycle] = useState(true);
 
     const [isAdding, setIsAdding] = useState(false);
 
@@ -58,50 +61,51 @@ export default function NotificationSection() {
         review: { initial: null, first: null, second: null, final: null },
     });
 
-    const hasReminders = Object.values(reminderIds)
-        .some(section => Object.values(section).some(id => id !== null));
+    const hasReminders = Object.values(reminderIds).some(section => Object.values(section).some(id => id !== null));
 
-    const formatForInput = (iso: string) =>
-        new Date(iso).toISOString().slice(0, 16);
+    const formatForInput = (iso: string) => new Date(iso).toISOString().slice(0, 16);
 
-    // Fetch all review cycles
+    // instead: fetch *one* cycle by ID
     useEffect(() => {
+        if (!reviewCycleId) return;
+        setIsLoadingCycle(true);
         (async () => {
             try {
                 const token = localStorage.getItem("elevu_auth");
-                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-review-cycle`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-review-cycle-by-id`, {
+                    method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
+                    body: JSON.stringify({ review_cycle_id: Number(reviewCycleId) }),
                 });
-                if (!res.ok) throw new Error("Failed to fetch review cycles");
-                const json = await res.json();
-                const mapped = (json.data as any[]).map(item => ({
-                    id: String(item.review_cycle_id),
-                    label: item.name,
-                    startDate: item.start_date,
-                    endDate: item.end_date || null,
-                }));
-                setCycles(mapped);
-                if (mapped.length) {
-                    setSelectedCycle(mapped[0].id);
-                    setSelectedCycleDetails({ startDate: mapped[0].startDate, endDate: mapped[0].endDate });
-                }
-            } catch (err) {
+                if (!res.ok) throw new Error("Failed to fetch cycle");
+                const json = await res.json() as { success: boolean; data: ReviewCycle; message: string };
+                const d = json.data;
+                setCycleDetails({
+                    id: d.review_cycle_id,
+                    label: d.name,
+                    startDate: d.start_date,
+                    endDate: d.end_date,
+                });
+            } catch (err: any) {
                 console.error(err);
+                toast.error(err.message || "Could not load cycle");
+            } finally {
+                setIsLoadingCycle(false);
             }
         })();
-    }, []);
+    }, [reviewCycleId]);
 
     // Extracted: load reminders for a given cycle
-    const loadReminders = async (cycleId: string) => {
+    const loadReminders = async (reviewCycleId: number) => {
         try {
             const token = localStorage.getItem("elevu_auth");
             const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-reminders-by-review-cycle`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ review_cycle_id: cycleId }),
+                body: JSON.stringify({ review_cycle_id: reviewCycleId }),
             });
             if (!res.ok) throw new Error("Failed to fetch reminders");
             const json = await res.json();
@@ -139,10 +143,10 @@ export default function NotificationSection() {
 
     // Whenever selectedCycle changes, reload its reminders
     useEffect(() => {
-        if (selectedCycle) {
-            loadReminders(selectedCycle);
+        if (reviewCycleId) {
+            loadReminders(Number(reviewCycleId));
         }
-    }, [selectedCycle]);
+    }, [reviewCycleId]);
 
     const handleDateChange = async (section: SectionKey, field: DateField, value: string) => {
         setDates(prev => ({
@@ -195,7 +199,7 @@ export default function NotificationSection() {
                         method: "POST",
                         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                         body: JSON.stringify({
-                            review_cycle_id: selectedCycle,
+                            review_cycle_id: reviewCycleId,
                             scheduled_date: dates[section.key][rem.key],
                             reminder_type: section.key,
                         }),
@@ -204,7 +208,7 @@ export default function NotificationSection() {
             }
             toast.success("All reminders created");
             // 3) Refresh the same cycle's data
-            await loadReminders(selectedCycle);
+            await loadReminders(Number(reviewCycleId));
         } catch (err: any) {
             console.error(err);
             toast.error(err.message || "Failed to add reminders");
@@ -215,31 +219,26 @@ export default function NotificationSection() {
 
     return (
         <div className="flex flex-col gap-5">
-            {/* Cycle selector */}
+
+            {/* ── Review Cycle Info ── */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Select Review Cycle</CardTitle>
+                    <CardTitle>Review Cycle</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Select
-                        value={selectedCycle}
-                        onValueChange={val => {
-                            setSelectedCycle(val);
-                            const c = cycles.find(x => x.id === val);
-                            setSelectedCycleDetails(c ? { startDate: c.startDate, endDate: c.endDate } : null);
-                        }}
-                    >
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select review cycle" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {cycles.map(cycle => (
-                                <SelectItem key={cycle.id} value={cycle.id}>
-                                    {cycle.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    {isLoadingCycle ? (
+                        <p className="text-gray-500">Loading cycle…</p>
+                    ) : (
+                        <div className="space-y-1">
+                            <h2 className="text-lg font-semibold">{cycleDetails.label}</h2>
+                            <p className="text-sm text-gray-600">
+                                {new Date(cycleDetails.startDate).toLocaleString()} —{" "}
+                                {cycleDetails.endDate
+                                    ? new Date(cycleDetails.endDate).toLocaleString()
+                                    : "No end date"}
+                            </p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -266,8 +265,8 @@ export default function NotificationSection() {
                                 const now = new Date();
 
                                 if (rem.key === "initial") {
-                                    if (selectedCycleDetails?.startDate) {
-                                        const cs = new Date(selectedCycleDetails.startDate);
+                                    if (cycleDetails?.startDate) {
+                                        const cs = new Date(cycleDetails.startDate);
                                         minBound = formatForInput((cs > now ? cs : now).toISOString());
                                     } else {
                                         minBound = formatForInput(now.toISOString());
@@ -290,7 +289,7 @@ export default function NotificationSection() {
                                                 value={dates[section.key][rem.key]}
                                                 onChange={e => handleDateChange(section.key, rem.key, e.target.value)}
                                                 min={minBound}
-                                                max={selectedCycleDetails?.endDate ? formatForInput(selectedCycleDetails.endDate) : undefined}
+                                                max={cycleDetails?.endDate ? formatForInput(cycleDetails.endDate) : undefined}
                                                 className="flex-1 !block justify-between"
                                             />
                                         </div>

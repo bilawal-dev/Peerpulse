@@ -1,10 +1,10 @@
 "use client";
 
 import Sidebar from "@/components/Dashboard/Sidebar";
-import { usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { adminNavItems } from "./navItems";
 import { useAuth } from "@/context/AuthContext";
+import { getAdminNavItems } from "./navItems";
 
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -12,11 +12,13 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
     const { user, loading } = useAuth();
 
+    const { reviewCycleId } = useParams();
+
     const router = useRouter();
 
     const pathName = usePathname();
 
-    const reviewsPath = pathName.startsWith('/admin/dashboard/compiled-reviews/');
+    const reviewsPath = pathName.startsWith(`/admin/dashboard/${reviewCycleId}/compiled-reviews`);
 
     // * REDIRECT TO LOGIN IF USER IS NOT AUTHENTICATED OR TO EMPLOYEE DASHBOARD IF NOT AN ADMIN
     useEffect(() => {
@@ -42,6 +44,9 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
             </main>
         )
     }
+
+    const prefix = `/admin/dashboard/${reviewCycleId}`;
+    const adminNavItems = getAdminNavItems(prefix);
 
     return (
         <div className="min-h-screen bg-gray-50">

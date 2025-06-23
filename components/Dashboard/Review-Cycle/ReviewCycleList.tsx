@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { Trash2, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { ReviewCycle } from "@/app/admin/dashboard/[reviewCycleId]/review-cycle/page";
+import { ReviewCycle } from "@/types/ReviewCycle";
 import Link from "next/link";
 
 

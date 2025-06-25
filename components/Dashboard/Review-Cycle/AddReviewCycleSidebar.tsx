@@ -21,7 +21,7 @@ export type NewCycleValues = {
 
 type Props = {
     onCancel: () => void;
-    onSubmit: (vals: NewCycleValues) => Promise<boolean>;
+    onSubmit: (vals: NewCycleValues) => Promise<boolean> | boolean;
 };
 
 export default function AddReviewCycleSidebar({ onCancel, onSubmit }: Props) {

@@ -74,12 +74,12 @@ export default function AdminDashboardRoot() {
             });
             toast.success("Cycle created");
             await fetchAllCycles();
+            setAddOpen(false);
             return true;
         } catch {
             toast.error("Failed to create cycle");
-            return false;
-        } finally {
             setAddOpen(false);
+            return false;
         }
     }
 

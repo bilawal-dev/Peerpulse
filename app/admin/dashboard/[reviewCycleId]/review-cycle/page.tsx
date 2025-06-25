@@ -43,12 +43,15 @@ export default function DashboardReviewCyclePage() {
                     Authorization: `Bearer ${token}`
                 },
             });
-            if (!res.ok) throw new Error();
-            const json = await res.json() as { data: ReviewCycle[] };
+            const json = await res.json() as { success: boolean, message: string, data: ReviewCycle[] };
+            if (!json.success) {
+                throw new Error(json.message || "Failed to fetch cycles");
+            }
             setCycles(json.data)
 
-        } catch {
-            toast.error("Failed to load cycles");
+        } catch (error: any) {
+            console.error("Error fetching cycles:", error);
+            toast.error(error.message || "Failed to fetch cycles");
         } finally {
             setIsLoading(false);
         }
@@ -61,7 +64,7 @@ export default function DashboardReviewCyclePage() {
     async function handleAdd(vals: NewCycleValues) {
         try {
             const token = localStorage.getItem("elevu_auth");
-            await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/add-review-cycle`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/add-review-cycle`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
@@ -72,14 +75,22 @@ export default function DashboardReviewCyclePage() {
                     max_reviews_allowed: vals.requiredReviewers || 0,
                 }),
             });
+            const json = await res.json();
+            if (!json.success) {
+                throw new Error(json.message || "Failed to create cycle");
+            }
             toast.success("Cycle created");
             await fetchAllCycles();
-        } catch {
-            toast.error("Failed to create cycle");
+            return true;
+        } catch (error: any) {
+            console.error("Error creating cycle:", error);
+            toast.error(error.message || "Failed to create cycle");
+            return false;
         } finally {
             setAddOpen(false);
         }
     }
+
 
     // edit
     function openEdit(cycle: ReviewCycle) {
@@ -163,15 +174,20 @@ export default function DashboardReviewCyclePage() {
         setDeleteOpen(false);
         try {
             const token = localStorage.getItem("elevu_auth");
-            await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/delete-review-cycle`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/delete-review-cycle`, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ review_cycle_id: Number(targetDeleteId) }),
             });
+            const json = await res.json();
+            if (!json.success) {
+                throw new Error(json.message || "Failed to delete cycle");
+            }
             setCycles(cycles => cycles.filter(cycle => cycle.review_cycle_id !== targetDeleteId));
             toast.success("Cycle deleted");
-        } catch {
-            toast.error("Delete failed");
+        } catch (error: any) {
+            console.error("Error deleting cycle:", error);
+            toast.error(error.message || "Failed to delete cycle");
         } finally {
             setDeleting(false);
         }

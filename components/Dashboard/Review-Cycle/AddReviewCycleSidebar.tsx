@@ -3,14 +3,13 @@
 
 import React, { useState } from "react";
 import { DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { CardContent, } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { Settings2 } from "lucide-react";
 
 export type NewCycleValues = {
     label: string;
@@ -22,7 +21,7 @@ export type NewCycleValues = {
 
 type Props = {
     onCancel: () => void;
-    onSubmit: (vals: NewCycleValues) => void;
+    onSubmit: (vals: NewCycleValues) => Promise<boolean>;
 };
 
 export default function AddReviewCycleSidebar({ onCancel, onSubmit }: Props) {
@@ -121,9 +120,17 @@ export default function AddReviewCycleSidebar({ onCancel, onSubmit }: Props) {
                 <Button variant="outline" onClick={onCancel}>
                     Cancel
                 </Button>
-                <Button disabled={disabledSave} onClick={() =>
-                    onSubmit({ label: label.trim(), startDate, endDate, maxPeers, requiredReviewers })
-                }>
+                <Button disabled={disabledSave} onClick={async () => {
+                    const isSuccess = await onSubmit({ label: label.trim(), startDate, endDate, maxPeers, requiredReviewers });
+
+                    if (isSuccess) {
+                        setLabel('');
+                        setStartDate(new Date());
+                        setEndDate(undefined);
+                        setMaxPeers(undefined);
+                        setRequiredReviewers(undefined);
+                    }
+                }}>
                     Save
                 </Button>
             </DialogFooter>

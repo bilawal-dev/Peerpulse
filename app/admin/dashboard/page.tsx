@@ -58,7 +58,7 @@ export default function AdminDashboardRoot() {
     function openAdd() {
         setAddOpen(true);
     }
-    async function handleAdd(vals: NewCycleValues) {
+    async function handleAdd(vals: NewCycleValues): Promise<boolean> {
         try {
             const token = localStorage.getItem("elevu_auth");
             await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/add-review-cycle`, {
@@ -74,8 +74,10 @@ export default function AdminDashboardRoot() {
             });
             toast.success("Cycle created");
             await fetchAllCycles();
+            return true;
         } catch {
             toast.error("Failed to create cycle");
+            return false;
         } finally {
             setAddOpen(false);
         }

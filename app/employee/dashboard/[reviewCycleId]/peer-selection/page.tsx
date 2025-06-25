@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { AlertCircle } from "lucide-react";
+import { set } from "date-fns";
 
 type Employee = {
     code: string;
@@ -18,8 +19,7 @@ type Employee = {
 };
 
 export default function ReviewCyclePeerSelectionPage() {
-    const { user } = useAuth();
-    const [employeeName] = useState(user.name || "");
+    const [employeeName, setEmployeeName] = useState("");
     const [maxSelections, setMaxSelections] = useState(4);
     const [availablePeers, setAvailablePeers] = useState<Employee[]>([]);
     const [selectedPeers, setSelectedPeers] = useState<string[]>([]);
@@ -47,11 +47,15 @@ export default function ReviewCyclePeerSelectionPage() {
                 const token = localStorage.getItem("elevu_auth");
                 if (!token) throw new Error("No auth token found. Please log in again.");
 
-                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-employee-by-department/${reviewCycleId}`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-employee-by-department`, {
+                    method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
+                    body: JSON.stringify({
+                        review_cycle_id: reviewCycleId,
+                    })
                 });
                 const json = await res.json();
 
@@ -63,8 +67,9 @@ export default function ReviewCyclePeerSelectionPage() {
                 const isAlready = json.data.is_already_selected_peers === true;
                 setAlreadySelected(isAlready);
 
-                const { employees_data, review_cycle } = json.data;
+                const { employees_data, review_cycle, employee_name } = json.data;
                 setMaxSelections(review_cycle.max_peer_selection);
+                setEmployeeName(employee_name);
 
                 const flatPeers: Employee[] = employees_data.flatMap((deptObj: any) =>
                     deptObj.employees.map((emp: any) => {
@@ -86,7 +91,7 @@ export default function ReviewCyclePeerSelectionPage() {
                 }
             } catch (err: any) {
                 console.error("Error loading data:", err);
-                toast.error(err.message1 || 'Something went wrong while loading peers.')
+                toast.error(err.message || 'Something went wrong while loading peers.')
                 setFetchError(true);
             } finally {
                 setLoading(false);
@@ -94,7 +99,7 @@ export default function ReviewCyclePeerSelectionPage() {
         }
 
         fetchData();
-    }, [reviewCycleId, user]);
+    }, [reviewCycleId]);
 
     async function submitSelections() {
         if (selectedPeers.length === 0) {
@@ -107,13 +112,17 @@ export default function ReviewCyclePeerSelectionPage() {
             if (!token) throw new Error("No auth token found. Please log in again.");
 
             const employeeIds = selectedPeers.map((code) => parseInt(code, 10));
-            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/select-peer-list/${reviewCycleId}`, {
+            
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/select-peer-list`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ employee_ids: employeeIds }),
+                body: JSON.stringify({
+                    employee_ids: employeeIds,
+                    review_cycle_id: reviewCycleId,
+                }),
             });
 
             if (!res.ok) {
@@ -193,17 +202,18 @@ export default function ReviewCyclePeerSelectionPage() {
         <Card className="bg-white p-6 space-y-6">
             <header className="flex justify-between items-center mb-4">
                 <h1 className="text-xl font-semibold">{employeeName}</h1>
+
                 <div className="text-sm bg-blue-100 text-blue-700 rounded-full px-3 py-1">
                     {selectedPeers.length}/{maxSelections} peers selected
                 </div>
             </header>
 
             {alreadySelected ? (
-                <p className="mb-6 text-gray-700">
+                <p className="text-gray-700">
                     You have already selected your peers for this review cycle.
                 </p>
             ) : (
-                <p className="mb-6 text-gray-700">
+                <p className="text-gray-700">
                     Please select up to {maxSelections} colleagues who you work closely with or
                     know well enough to provide meaningful feedback on your performance.
                 </p>
@@ -211,7 +221,7 @@ export default function ReviewCyclePeerSelectionPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 py-4">
                 {Object.entries(peersByDept).map(([dept, peers]) => (
-                    <section key={dept} className="border border-gray-300 rounded-md overflow-hidden flex flex-col"                    >
+                    <section key={dept} className="border border-gray-300 rounded-md overflow-hidden flex flex-col">
                         <h2 className="bg-gray-50 px-4 py-2 font-semibold text-gray-700 border-b border-gray-300">
                             {dept}
                         </h2>

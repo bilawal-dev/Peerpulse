@@ -52,14 +52,30 @@ export default function EmployeeDashboardRoot() {
             setLoading(true);
             try {
                 const token = localStorage.getItem("elevu_auth");
-                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-company-review-cycle`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-review-cycle-for-employee`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
                 });
                 const json = await res.json();
                 if (!json.success) throw new Error(json.message);
-                setCycles(json.data);
+                
+                // map out the inner review_cycle object
+                const cyclesData: ReviewCycle[] = json.data.map((item: any) => ({
+                    review_cycle_id: item.review_cycle.review_cycle_id,
+                    name: item.review_cycle.name,
+                    start_date: item.review_cycle.start_date,
+                    end_date: item.review_cycle.end_date,
+                    is_active: item.review_cycle.is_active,
+                    max_peer_selection: item.review_cycle.max_peer_selection,
+                    max_reviews_allowed: item.review_cycle.max_reviews_allowed,
+                    is_peer_selection_enabled: item.review_cycle.is_peer_selection_enabled,
+                    is_review_enabled: item.review_cycle.is_review_enabled,
+                    created_at: item.review_cycle.created_at,
+                    updated_at: item.review_cycle.updated_at,
+                }))
+
+                setCycles(cyclesData)
             } catch (err: any) {
                 console.error(err);
                 setError(err.message || "Failed to load review cycles");

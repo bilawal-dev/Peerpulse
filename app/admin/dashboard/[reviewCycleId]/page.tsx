@@ -24,7 +24,7 @@ type DashboardData = {
 
 export default function AdminDashboardPage() {
 
-    const { reviewCycleId } = useParams();
+    const reviewCycleId = Number(useParams().reviewCycleId);
 
     // dashboard data
     const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -53,7 +53,7 @@ export default function AdminDashboardPage() {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                    body: JSON.stringify({ review_cycle_id: Number(reviewCycleId) }),
+                    body: JSON.stringify({ review_cycle_id: reviewCycleId }),
                 });
                 if (!res.ok) throw new Error("Failed to fetch cycle info");
                 const json = await res.json() as { success: boolean; data: ReviewCycle; message: string };
@@ -79,7 +79,7 @@ export default function AdminDashboardPage() {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                    body: JSON.stringify({ review_cycle_id: Number(reviewCycleId) }),
+                    body: JSON.stringify({ review_cycle_id: reviewCycleId }),
                 });
                 if (!res.ok) throw new Error("Failed to fetch dashboard data");
                 const json = await res.json();
@@ -115,7 +115,7 @@ export default function AdminDashboardPage() {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ review_cycle_id: Number(reviewCycleId) }),
+                body: JSON.stringify({ review_cycle_id: reviewCycleId }),
             });
             const json = await res.json();
             if (!json.success) throw new Error(json.message || "Failed to start automated pairing");

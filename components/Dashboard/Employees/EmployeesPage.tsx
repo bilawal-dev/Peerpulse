@@ -1,37 +1,16 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  ChangeEvent,
-  useRef,
-} from "react";
+import React, { useState, useEffect, ChangeEvent, useRef, } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipProvider,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, } from "@/components/ui/select";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent, } from "@/components/ui/tooltip";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Edit2, MailPlus, Trash2 } from "lucide-react";
+import { useParams } from "next/navigation";
+import toast from "react-hot-toast";
 
 //
 // We define a TypeScript type that matches the shape returned by GET /company/get-all-employee.
@@ -44,10 +23,7 @@ type FetchedEmployee = {
   department: string;
   status: string;
   // other fields exist, but we only care about manager.email for now:
-  manager: {
-    email: string;
-    // the rest of the manager fields are omitted for brevity
-  } | null;
+  manager_email: string | null;
 };
 
 //
@@ -59,15 +35,15 @@ type Employee = {
   email: string;
   department: string;
   status?: string;
-  managerEmail?: string;
+  manager_email?: string;
 };
 
 const initialEmployeeState: Employee = {
   name: "",
   email: "",
   department: "",
-  status: "initial",
-  managerEmail: "",
+  status: "",
+  manager_email: "",
 };
 
 export default function EmployeesPage() {
@@ -91,6 +67,10 @@ export default function EmployeesPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
 
+  const [isInviteAllLoading, setIsInviteAllLoading] = useState(false);
+
+  const reviewCycleId = Number(useParams().reviewCycleId);
+
   //
   // 1) Fetch all employees from the server and populate state.
   //    Called on component mount, and also after a successful upload.
@@ -98,16 +78,16 @@ export default function EmployeesPage() {
   const fetchEmployees = async () => {
     try {
       const token = localStorage.getItem("elevu_auth");
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-employee`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/get-all-employee`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          review_cycle_id: reviewCycleId,
+        }),
+      });
 
       if (!response.ok) {
         const text = await response.text();
@@ -144,17 +124,12 @@ export default function EmployeesPage() {
 
     // 2.2 Parse CSV → array of Employee objects (camelCase keys)
     const [headerLine, ...lines] = text.trim().split("\n");
-    const headers = headerLine.split(",").map((h) => h.trim());
     const parsedData: Employee[] = lines.map((line) => {
-      const cols = line.split(",").map((c) => c.trim());
-      return headers.reduce((acc, key, i) => {
-        // If CSV header was "manager_email", store it in `managerEmail` in parsedData
-        const normalizedKey =
-          key === "manager_email" ? "managerEmail" : key;
-        (acc as any)[normalizedKey] = cols[i] ?? "";
-        return acc;
-      }, {} as any) as Employee;
-    });
+      const [name, email, department, manager_email] = line
+        .split(",")
+        .map((c) => c.trim());
+      return { name, email, department, manager_email };
+    });;
 
     console.log("Parsed CSV data:", parsedData);
 
@@ -163,23 +138,23 @@ export default function EmployeesPage() {
       name: emp.name,
       email: emp.email,
       department: emp.department,
-      manager_email: emp.managerEmail, // <-- snake_case for your API
+      manager_email: emp.manager_email, // <-- snake_case for your API
     }));
 
     try {
       const token = localStorage.getItem("elevu_auth");
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/upload-employees`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/upload-employees`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          employees: payload,
+          review_cycle_id: reviewCycleId
+        }),
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -204,7 +179,7 @@ export default function EmployeesPage() {
   //
   const downloadTemplate = () => {
     const template = [
-      ["name", "email", "department", "managerEmail", "status"],
+      ["name", "email", "department", "manager_email", "status"],
       [
         "John Doe",
         "john.doe@example.com",
@@ -230,22 +205,20 @@ export default function EmployeesPage() {
   const handleAdd = async () => {
     try {
       const token = localStorage.getItem("elevu_auth");
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/single-add-employee`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            name: newEmp.name,
-            email: newEmp.email,
-            department: newEmp.department,
-            manager_email: newEmp.managerEmail, // snake_case per your API
-          }),
-        }
-      );
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/single-add-employee`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          review_cycle_id: reviewCycleId,
+          name: newEmp.name,
+          email: newEmp.email,
+          department: newEmp.department,
+          manager_email: newEmp.manager_email, // snake_case per your API
+        }),
+      });
 
       if (!response.ok) {
         const text = await response.text();
@@ -279,7 +252,7 @@ export default function EmployeesPage() {
       name: emp.name,
       email: emp.email,
       department: emp.department,
-      managerEmail: emp.manager?.email || "",
+      manager_email: emp.manager_email || "",
       status: emp.hasOwnProperty("status") ? (emp as any).status : undefined,
     });
     setEditOpen(true);
@@ -292,23 +265,21 @@ export default function EmployeesPage() {
       const token = localStorage.getItem("elevu_auth");
       const targetEmp = employees[editIndex];
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-employee`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            employee_id: targetEmp.employee_id,
-            name: editEmp.name,
-            department: editEmp.department,
-            status: editEmp.status,
-            manager_email: editEmp.managerEmail ? editEmp.managerEmail : null,
-          }),
-        }
-      );
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-employee`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          employee_id: targetEmp.employee_id,
+          review_cycle_id: reviewCycleId,
+          name: editEmp.name,
+          department: editEmp.department,
+          status: editEmp.status,
+          manager_email: editEmp.manager_email ? editEmp.manager_email : null,
+        }),
+      });
 
       if (!response.ok) {
         const text = await response.text();
@@ -347,19 +318,17 @@ export default function EmployeesPage() {
       const token = localStorage.getItem("elevu_auth");
       const targetEmp = employees[deleteIndex];
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/delete-employee`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            employee_id: targetEmp.employee_id,
-          }),
-        }
-      );
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/delete-employee`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          employee_id: targetEmp.employee_id,
+          review_cycle_id: reviewCycleId,
+        }),
+      });
 
       if (!response.ok) {
         const text = await response.text();
@@ -388,30 +357,36 @@ export default function EmployeesPage() {
   const handleInvite = async (employeeId: number) => {
     try {
       const token = localStorage.getItem("elevu_auth");
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/invite-employee`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ employee_id: employeeId }),
-        }
-      );
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(
-          `POST /company/invite-employee responded with ${response.status}: ${text}`
-        );
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/invite-employee`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          employee_id: employeeId,
+          review_cycle_id: reviewCycleId
+        }),
+      });
+      const json = await response.json();
+
+      if(!json.success) {
+        throw new Error(json.message || "Failed to invite employee");
       }
-      alert("Invitation sent to employee successfully.");
+      toast.success("Invitation sent to employee successfully.");
+
+      // * UPDATE STATUS LOCALLY
+      setEmployees((prev) => {
+        return prev.map((emp) => {
+          if (emp.employee_id === employeeId && emp.status === 'Initial Upload') {
+            return { ...emp, status: "Invited" }; 
+          }
+          return emp;
+        });
+      })
     } catch (error: any) {
       console.error("Error inviting employee:", error);
-      alert(
-        "There was a problem sending the invitation:\n" +
-        (error.message || "Unknown server error")
-      );
+      toast.error(error.message || "Unknown server error");
     }
   };
 
@@ -419,31 +394,38 @@ export default function EmployeesPage() {
   // 8) Invite all employees → POST to /company/invite-all-employee, no re-fetch needed
   //
   const handleInviteAll = async () => {
+    setIsInviteAllLoading(true);
     try {
       const token = localStorage.getItem("elevu_auth");
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SERVER_URL}/company/invite-all-employee`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(
-          `POST /company/invite-all-employee responded with ${response.status}: ${text}`
-        );
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/invite-all-employee`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ review_cycle_id: reviewCycleId }),
+      });
+      const json = await response.json();
+
+      if(!json.success) {
+        throw new Error(json.message || "Failed to invite employees");
       }
-      alert("Invitations sent to all employees successfully.");
+      toast.success("Invitations sent to all employees successfully.");
+
+      // * UPDATE STATUS LOCALLY
+      setEmployees((prev) => {
+        return prev.map((emp) => {
+          if(emp.status === 'Initial Upload') {
+            return { ...emp, status: "Invited" }; // Set all to "Invited"
+          }
+          return emp;
+        });
+      });
     } catch (error: any) {
       console.error("Error inviting all employees:", error);
-      alert(
-        "There was a problem sending invitations to all employees:\n" +
-        (error.message || "Unknown server error")
-      );
+      toast.error(error.message || "Unknown server error");
+    } finally {
+          setIsInviteAllLoading(false);
     }
   };
 
@@ -501,7 +483,7 @@ export default function EmployeesPage() {
               </Tooltip>
             </TooltipProvider>
 
-            <Button onClick={handleInviteAll} className="bg-blue-600 hover:bg-blue-700">
+            <Button disabled={employees.length === 0 || isInviteAllLoading} onClick={handleInviteAll} className="bg-blue-600 hover:bg-blue-700">
               Invite All Employees
             </Button>
 
@@ -533,7 +515,7 @@ export default function EmployeesPage() {
                     { label: "Name", key: "name" },
                     { label: "Email", key: "email" },
                     { label: "Department", key: "department" },
-                    { label: "Manager Email", key: "managerEmail" },
+                    { label: "Manager Email", key: "manager_email" },
                   ].map(({ label, key }) => (
                     <div key={key} className="space-y-1">
                       <Label htmlFor={key}>{label}</Label>
@@ -569,7 +551,7 @@ export default function EmployeesPage() {
                   "Department",
                   // "Peer Selection",
                   // "Review",
-                  // "Status",
+                  "Status",
                   "Manager Email",
                   "Actions",
                 ].map((h) => (
@@ -608,11 +590,11 @@ export default function EmployeesPage() {
                       Review Link
                     </a>
                   </td> */}
-                  {/* <td className="px-4 py-3 whitespace-nowrap capitalize">
-                    {(emp as any).status || "-"}
-                  </td> */}
+                  <td className="px-4 py-3 whitespace-nowrap capitalize">
+                    {emp.status || "-"}
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    {emp.manager?.email || "-"}
+                    {emp?.manager_email || "-"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap flex space-x-2">
                     <button onClick={() => onEditClick(idx)}>
@@ -654,7 +636,7 @@ export default function EmployeesPage() {
               {[
                 { label: "Name", key: "name" },
                 { label: "Department", key: "department" },
-                { label: "Manager Email", key: "managerEmail" },
+                { label: "Manager Email", key: "manager_email" },
               ].map(({ label, key }) => (
                 <div key={key} className="space-y-1">
                   <Label htmlFor={`edit-${key}`}>{label}</Label>

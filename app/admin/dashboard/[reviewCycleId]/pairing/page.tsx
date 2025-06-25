@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState, useMemo, DragEvent, useEffect } from "react"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { User, ArrowLeft, ArrowRight, X as XIcon, Info } from "lucide-react"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@radix-ui/react-tooltip"
@@ -443,7 +442,7 @@ export default function DashboardPairingPage() {
                         <span>{emp.reviewers.length}/{currentCycle?.maxReviewsAllowed ?? 0}</span>
                     </div>
                     {zone && assignmentId != null && (
-                        <button onClick={() => removeAssignment(zone, code, assignmentId)} className="ml-2 p-1 hover:bg-gray-100 rounded" title="Remove"                        >
+                        <button onClick={() => removeAssignment(zone, code, assignmentId)} className="ml-2 p-1 hover:bg-gray-100 rounded" title="Remove">
                             <XIcon className="w-4 h-4 text-red-500" />
                         </button>
                     )}
@@ -656,7 +655,7 @@ export default function DashboardPairingPage() {
                                                     All Available Employees ({availableList.length})
                                                 </AccordionTrigger>
                                                 <AccordionContent className="pt-4">
-                                                    <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-x-6">
+                                                    <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-x-6">
                                                         {availableList.map((code) => (
                                                             <Chip key={code} code={code} draggable />
                                                         ))}

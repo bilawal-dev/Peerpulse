@@ -65,7 +65,7 @@ export default function Sidebar({ collapsed, onToggle, navItems, }: SidebarProps
                         <UserIcon className="h-5 w-5 text-gray-500" />
                         <div className="flex flex-col">
                             <span className="text-sm font-medium text-gray-700 truncate">
-                                {user.name}
+                                {user?.name}
                             </span>
                             <span className="text-xs text-gray-500 truncate">
                                 {user.email}

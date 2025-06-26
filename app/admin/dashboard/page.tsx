@@ -1,4 +1,4 @@
-// app/employee/dashboard/review-cycles/page.tsx
+// /admin/dashboard/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -14,7 +14,7 @@ import ButtonLoader from "@/components/Common/ButtonLoader";
 import { ReviewCycle } from "@/types/ReviewCycle";
 
 
-export default function AdminDashboardRoot() {
+export default function AdminDashboardRootPage() {
     const [cycles, setCycles] = useState<ReviewCycle[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 

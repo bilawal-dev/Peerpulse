@@ -1,4 +1,4 @@
-// app/employee/dashboard/page.tsx
+// /employee/dashboard/page.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -37,7 +37,7 @@ function getInitials(name = "") {
     );
 }
 
-export default function EmployeeDashboardRoot() {
+export default function EmployeeDashboardRootPage() {
     const { user, logout } = useAuth();
     const [cycles, setCycles] = useState<ReviewCycle[]>([]);
     const [loading, setLoading] = useState(true);

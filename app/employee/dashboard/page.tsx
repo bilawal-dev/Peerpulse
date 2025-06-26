@@ -11,7 +11,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue, } from "@/components/ui/select";
-import { Home, LogOut } from "lucide-react";
+import { Home, LogOut, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 interface ReviewCycle {
@@ -26,15 +26,11 @@ interface ReviewCycle {
     is_review_enabled: boolean;
     created_at: string;
     updated_at: string;
-}
-
-function getInitials(name = "") {
-    const parts = name.trim().split(" ");
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-    return (
-        parts[0].charAt(0).toUpperCase() +
-        parts[1].charAt(0).toUpperCase()
-    );
+    companyName: string;
+    companyEmail: string;
+    companyMobile?: string;
+    companyDescription?: string;
+    companyLogo?: string;
 }
 
 export default function EmployeeDashboardRootPage() {
@@ -45,7 +41,7 @@ export default function EmployeeDashboardRootPage() {
 
     // New: search & filter state
     const [search, setSearch] = useState("");
-    const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
+    const [filter, setFilter] = useState<string>("all");
 
     useEffect(() => {
         (async () => {
@@ -59,7 +55,7 @@ export default function EmployeeDashboardRootPage() {
                 });
                 const json = await res.json();
                 if (!json.success) throw new Error(json.message);
-                
+
                 // map out the inner review_cycle object
                 const cyclesData: ReviewCycle[] = json.data.map((item: any) => ({
                     review_cycle_id: item.review_cycle.review_cycle_id,
@@ -73,6 +69,11 @@ export default function EmployeeDashboardRootPage() {
                     is_review_enabled: item.review_cycle.is_review_enabled,
                     created_at: item.review_cycle.created_at,
                     updated_at: item.review_cycle.updated_at,
+                    companyName: item.review_cycle.company.name,
+                    companyEmail: item.review_cycle.company.email,
+                    companyMobile: item.review_cycle.company.mobile_number || "",
+                    companyDescription: item.review_cycle.company.description || "",
+                    companyLogo: item.review_cycle.company.company_logo || "",
                 }))
 
                 setCycles(cyclesData)
@@ -86,19 +87,26 @@ export default function EmployeeDashboardRootPage() {
         })();
     }, []);
 
+    const companies = useMemo(() => {
+        const names = cycles.map(c => c.companyName);
+        const unique = Array.from(new Set(names));
+        return ["all", ...unique];
+    }, [cycles]);
+
     // Stats
     const total = cycles.length;
     const activeCount = cycles.filter((c) => c.is_active).length;
     const inactiveCount = total - activeCount;
 
     // apply search + filter to cycles
-    const visibleCycles = useMemo(() => {
-        return cycles.filter((c) => {
-            if (filter === "active" && !c.is_active) return false;
-            if (filter === "inactive" && c.is_active) return false;
-            return c.name.toLowerCase().includes(search.toLowerCase());
-        });
-    }, [cycles, filter, search]);
+    const visibleCycles = useMemo(
+        () =>
+            cycles.filter(c => {
+                if (filter !== "all" && c.companyName !== filter) return false;
+                return c.name.toLowerCase().includes(search.toLowerCase());
+            }),
+        [cycles, filter, search]
+    );
 
     if (error) {
         return (
@@ -123,7 +131,7 @@ export default function EmployeeDashboardRootPage() {
                     <Popover>
                         <PopoverTrigger asChild>
                             <button className="w-8 h-8 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center font-medium hover:bg-gray-300 transition" aria-label="User menu" >
-                                {getInitials(user?.name)}
+                                <User className="w-5 h-5" />
                             </button>
                         </PopoverTrigger>
                         <PopoverContent align="end" className="w-48 p-2">
@@ -169,15 +177,15 @@ export default function EmployeeDashboardRootPage() {
             {/* — Filter & Search — */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center space-x-2">
-                    <Label htmlFor="filter">Filter:</Label>
-                    <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="All" />
-                        </SelectTrigger>
+                    <Label htmlFor="filter" className="whitespace-nowrap">Filter By Company:</Label>
+                    <Select value={filter} onValueChange={setFilter}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
+                            {companies.map(name => (
+                                <SelectItem key={name} value={name}>
+                                    {name === "all" ? "All" : name}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>
@@ -194,17 +202,34 @@ export default function EmployeeDashboardRootPage() {
             </div>
 
             {/* — Cycle Cards Grid (unchanged!) — */}
-            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2 2xl:grid-cols-3">
                 {loading ? (
                     <ReviewCycleSkeletons />
                 ) : visibleCycles.length > 0 ? (
                     visibleCycles.map((c) => (
                         <Card key={c.review_cycle_id} className="border border-gray-200 rounded-lg hover:shadow-lg transition-shadow">
-                            <CardHeader className="flex justify-between items-start border-b border-gray-100 pb-2">
+
+                            <CardContent className="flex items-start space-x-3 py-4">
+                                {c.companyLogo && (
+                                    <img
+                                        src={c.companyLogo}
+                                        alt={c.companyName}
+                                        className="w-12 h-12 rounded-full object-cover"
+                                    />
+                                )}
+                                <div>
+                                    <div className="text-sm font-medium">{c.companyName}</div>
+                                    <div className="text-xs text-gray-500">{c.companyEmail}</div>
+                                    <div className="text-xs text-gray-500">{c.companyMobile}</div>
+                                    <div className="text-xs text-gray-500">{c.companyDescription}</div>
+                                </div>
+                            </CardContent>
+
+                            <CardHeader className="flex justify-between items-start border-b border-gray-100 py-0 pb-3">
                                 <h2 className="text-xl font-semibold text-gray-800">
                                     {c.name}
                                 </h2>
-                                <div className="flex space-x-2">
+                                <div className="flex flex-wrap gap-2">
                                     <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${c.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                                         {c.is_active ? "Active" : "Inactive"}
                                     </span>
@@ -217,7 +242,8 @@ export default function EmployeeDashboardRootPage() {
                                 </div>
                             </CardHeader>
 
-                            <CardContent className="grid grid-cols-2 gap-4 text-sm text-gray-700">
+
+                            <CardContent className="grid grid-cols-2 gap-4 text-sm text-gray-700 pt-2">
                                 <div>
                                     <strong>Start:</strong>
                                     <div>{new Date(c.start_date).toLocaleString()}</div>

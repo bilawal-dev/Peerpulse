@@ -233,10 +233,7 @@ export default function NotificationSection() {
                             <h2 className="text-lg font-semibold">{cycleDetails.label}</h2>
                             <p className="text-sm text-gray-600">
                                 {new Date(cycleDetails.startDate).toLocaleString()} —{" "}
-                                {cycleDetails.endDate
-                                    ? new Date(cycleDetails.endDate).toLocaleString()
-                                    : "No end date"}
-                            </p>
+                                {cycleDetails.endDate ? new Date(cycleDetails.endDate).toLocaleString() : "No end date"} </p>
                         </div>
                     )}
                 </CardContent>

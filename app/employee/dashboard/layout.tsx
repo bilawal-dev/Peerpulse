@@ -24,7 +24,6 @@ export default function EmployeeDashboardRootLayout({ children }: { children: Re
     // Prevent rendering layout if user is not authenticated (Avoids flickering)
     if (!user || user.role !== "employee") return null;
 
-
     return (
         <>
             {children}

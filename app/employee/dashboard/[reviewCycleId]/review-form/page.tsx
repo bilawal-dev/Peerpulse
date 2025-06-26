@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { AlertCircle, ArrowLeft } from "lucide-react";
@@ -31,10 +31,8 @@ type Question = {
 };
 
 export default function ReviewCycleReviewFormPage() {
-    const pathname = usePathname();
     const router = useRouter();
-    const params = useParams();
-    const reviewCycleId = params?.reviewCycleId || "";
+    const reviewCycleId = Number(useParams().reviewCycleId);
 
     const [fetchError, setFetchError] = useState(false);
 
@@ -47,11 +45,7 @@ export default function ReviewCycleReviewFormPage() {
     const [peers, setPeers] = useState<Peer[]>([]);
     const [manager, setManager] = useState<Peer>();
 
-    const [questions, setQuestions] = useState<{
-        self: Question[];
-        peer: Question[];
-        manager: Question[];
-    }>({ self: [], peer: [], manager: [] });
+    const [questions, setQuestions] = useState<{ self: Question[]; peer: Question[]; manager: Question[]; }>({ self: [], peer: [], manager: [] });
 
     const [currentStep, setCurrentStep] = useState(0);
     const [responses, setResponses] = useState<ReviewResponse>({});
@@ -92,8 +86,7 @@ export default function ReviewCycleReviewFormPage() {
                     headers: {
                         Authorization: `Bearer ${token}`
                     },
-                }
-                );
+                });
                 if (!qRes.ok) throw new Error("Failed to fetch questions");
                 const qJson = await qRes.json();
                 const mapQ = (arr: any[], type: "self" | "peer" | "manager", limit: number) =>

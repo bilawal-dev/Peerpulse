@@ -123,32 +123,7 @@ export default function AdminDashboardRootPage() {
                     end_date: (vals.endDate || vals.startDate).toISOString(),
                     max_peer_selection: vals.maxPeers || 0,
                     max_reviews_allowed: vals.requiredReviewers || 0,
-                }),
-            }
-            );
-
-            // 2) peer-selection toggle
-            await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-peer-selection-status`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    review_cycle_id: Number(editId),
                     is_peer_selection_enabled: vals.isPeerSelectionEnabled,
-                }),
-            });
-
-            // 3) review toggle
-            await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-review-status`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    review_cycle_id: Number(editId),
                     is_review_enabled: vals.isReviewEnabled,
                 }),
             });
@@ -184,7 +159,7 @@ export default function AdminDashboardRootPage() {
             }
             setCycles(cycles => cycles.filter(cycle => cycle.review_cycle_id !== targetDeleteId));
             toast.success("Cycle deleted");
-        } catch(error: any) {
+        } catch (error: any) {
             console.error("Error deleting cycle:", error);
             toast.error(error.message || "Failed to delete cycle");
         } finally {

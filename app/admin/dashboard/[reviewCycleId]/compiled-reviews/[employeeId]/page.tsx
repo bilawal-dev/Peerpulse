@@ -16,6 +16,8 @@ interface EmployeeInfo {
     email: string;
     department: string;
     manager: string;
+    isHimselfManager: boolean;
+    role: 'manager' | 'employee';
 }
 
 interface ReviewItem {
@@ -128,7 +130,7 @@ export default function EmployeeCompiledReviewsPage() {
                     </h1>
                     <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 leading-snug">
                         {reviewCycleName}
-                        <span className="status-badge status-completed ml-4 inline-block w-fit px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium">
+                        <span className={`status-badge status-completed ml-4 inline-block w-fit px-3 py-1 rounded-full ${is_review_completed  ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"} text-sm font-medium`}>
                             {is_review_completed ? "Completed" : "Pending"}
                         </span>
                     </h2>
@@ -141,7 +143,7 @@ export default function EmployeeCompiledReviewsPage() {
                             EMPLOYEE
                         </span>
                         <span className="meta-value text-lg font-semibold text-gray-900 block">
-                            {employee.name}
+                            {employee.name || '-'}
                         </span>
                     </div>
                     <div className="meta-item text-center">
@@ -149,7 +151,7 @@ export default function EmployeeCompiledReviewsPage() {
                             MANAGER
                         </span>
                         <span className="meta-value text-lg font-semibold text-gray-900 block">
-                            {employee.manager}
+                            {employee.manager || 'No Manager'}
                         </span>
                     </div>
                     <div className="meta-item text-center">
@@ -157,7 +159,7 @@ export default function EmployeeCompiledReviewsPage() {
                             DEPARTMENT
                         </span>
                         <span className="meta-value text-lg font-semibold text-gray-900 block">
-                            {employee.department}
+                            {employee.department || '-'}
                         </span>
                     </div>
                 </section>
@@ -211,7 +213,7 @@ export default function EmployeeCompiledReviewsPage() {
                 </section>
 
                 {/* Manager Feedback */}
-                {manager_review.length > 0 && (
+                {employee.role === 'manager' && (
                     <section className="review-section mb-12 bg-white p-8 rounded-2xl shadow">
                         <div className="section-header flex items-center gap-4 mb-8">
                             <h2 className="section-title text-2xl font-bold text-gray-900">

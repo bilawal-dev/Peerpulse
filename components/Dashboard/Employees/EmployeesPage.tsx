@@ -253,7 +253,6 @@ export default function EmployeesPage() {
       email: emp.email,
       department: emp.department,
       manager_email: emp.manager_email || "",
-      status: emp.hasOwnProperty("status") ? (emp as any).status : undefined,
     });
     setEditOpen(true);
   };
@@ -276,7 +275,6 @@ export default function EmployeesPage() {
           review_cycle_id: reviewCycleId,
           name: editEmp.name,
           department: editEmp.department,
-          status: editEmp.status,
           manager_email: editEmp.manager_email ? editEmp.manager_email : null,
         }),
       });
@@ -649,25 +647,6 @@ export default function EmployeesPage() {
                   />
                 </div>
               ))}
-              <div className="space-y-1">
-                <Label htmlFor="edit-status">Status</Label>
-                <Select
-                  value={editEmp.status}
-                  onValueChange={(val) =>
-                    setEditEmp((s) => ({ ...s, status: val }))
-                  }
-                >
-                  <SelectTrigger id="edit-status" className="w-full">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Initial Upload">Initial Upload </SelectItem>
-                    <SelectItem value="Invited">Invited </SelectItem>
-                    <SelectItem value="Peer Selected">Peer Selected</SelectItem>
-                    <SelectItem value="Review Given">Review Given</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
             <DialogFooter className="mt-6 flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setEditOpen(false)}>

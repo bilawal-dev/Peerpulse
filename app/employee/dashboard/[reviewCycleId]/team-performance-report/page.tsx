@@ -182,7 +182,7 @@ export default function TeamPerformanceReportPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-8">Direct Reports</h1>
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
             {subordinates.map((sub) => (
-              <div className="review-card bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6 transform hover:-translate-y-1 hover:shadow-md transition">
+              <div key={sub.employee_id} className="review-card bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6 transform hover:-translate-y-1 hover:shadow-md transition">
                 <h3 className="text-lg font-semibold mb-2">{sub.name}</h3>
                 <p className="text-sm text-gray-500">{sub.department}</p>
                 <span className={`inline-block px-3 py-1 my-5 rounded-full text-xs font-medium ${sub.is_review_completed ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>

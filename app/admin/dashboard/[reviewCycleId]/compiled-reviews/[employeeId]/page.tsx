@@ -1,7 +1,7 @@
 // File: components/reviews/EmployeeCompiledReviewsPage.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Mail, Download, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useParams } from "next/navigation";
 import toast from "react-hot-toast";
+import { exportPDF } from "@/utils/exportPDF";
 
 interface EmployeeInfo {
     employee_id: number;
@@ -52,6 +53,8 @@ export default function EmployeeCompiledReviewsPage() {
     const [loading, setLoading] = useState<boolean>(true);
     const [exportOpen, setExportOpen] = useState(false);
 
+    const exportContainerRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         async function fetchDetails() {
             setLoading(true);
@@ -86,8 +89,13 @@ export default function EmployeeCompiledReviewsPage() {
         fetchDetails();
     }, [reviewCycleId, employeeId]);
 
-    const exportPDF = () => {
-        alert(`IMPLEMENTATION NEEDED HERE`);
+    const exportReviewPDF = async () => {
+        const element = exportContainerRef.current;
+        if (!element) return;
+
+        const pdfName = `${companyName} - ${reviewCycleName} - ${employee.name}.pdf`;
+
+        exportPDF(exportContainerRef, pdfName);
         setExportOpen(false);
     };
 
@@ -104,7 +112,7 @@ export default function EmployeeCompiledReviewsPage() {
 
     return (
         <div className="bg-gray-50 min-h-screen p-8 pt-0 max-sm:px-0">
-            <div className="review-container max-w-6xl mx-auto">
+            <div ref={exportContainerRef} className="review-container max-w-6xl mx-auto">
                 {/* Back to Dashboard */}
                 <Link href={`/admin/dashboard/${reviewCycleId}/compiled-reviews`} className="absolute top-3 sm:top-8 left-3 sm:left-8 flex items-center gap-2 rounded-full bg-white border border-gray-300 p-2 sm:p-3 shadow hover:bg-gray-100 transition">
                     <ArrowLeft className="w-6 h-6 text-gray-700" />
@@ -130,7 +138,7 @@ export default function EmployeeCompiledReviewsPage() {
                     </h1>
                     <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 leading-snug">
                         {reviewCycleName}
-                        <span className={`status-badge status-completed ml-4 inline-block w-fit px-3 py-1 rounded-full ${is_review_completed  ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"} text-sm font-medium`}>
+                        <span className={`status-badge status-completed ml-4 inline-block w-fit px-3 py-1 rounded-full ${is_review_completed ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"} text-sm font-medium`}>
                             {is_review_completed ? "Completed" : "Pending"}
                         </span>
                     </h2>
@@ -272,7 +280,7 @@ export default function EmployeeCompiledReviewsPage() {
                         <Button
                             variant="outline"
                             className="export-option flex justify-start items-center gap-4 px-5 py-10 bg-gray-100 rounded-lg hover:bg-gray-200"
-                            onClick={exportPDF}
+                            onClick={exportReviewPDF}
                         >
                             <Download size={24} />
                             <div className="export-option-text text-left">

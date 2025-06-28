@@ -20,6 +20,7 @@ interface EmployeeInfo {
   isHimselfManager: boolean;
   role: 'manager' | 'employee';
 }
+
 interface SubordinateInfo {
   employee_id: number;
   name: string;

@@ -1,7 +1,7 @@
 // File: app/employee/dashboard/[reviewCycleId]/team-performance-report/[employeeId]page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Mail, Download, AlertCircle } from "lucide-react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Image from "next/image";
@@ -11,6 +11,7 @@ import { useParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { exportPDF } from "@/utils/exportPDF";
 
 interface EmployeeInfo {
     employee_id: number;
@@ -48,6 +49,8 @@ export default function TeamPerformanceReportEmployeePage() {
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState<boolean>(false);
 
+    const exportContainerRef = useRef<HTMLDivElement>(null);
+
 
     useEffect(() => {
         async function fetchDetails() {
@@ -82,8 +85,13 @@ export default function TeamPerformanceReportEmployeePage() {
     }, [reviewCycleId]);
 
 
-    const exportPDF = () => {
-        alert(`IMPLEMENTATION NEEDED HERE`);
+    const exportReviewPDF = async () => {
+        const element = exportContainerRef.current;
+        if (!element) return;
+
+        const pdfName = `${data?.company.name} - ${data?.review_cycle.name} - ${data?.employee.name}.pdf`;
+
+        exportPDF(exportContainerRef, pdfName);
         setExportOpen(false);
     };
 
@@ -137,14 +145,14 @@ export default function TeamPerformanceReportEmployeePage() {
         );
     }
 
-    if(!data) return null;
+    if (!data) return null;
 
     const { employee, is_review_completed, self_review, peer_review, manager_review, company, review_cycle, } = data;
 
 
     return (
         <div className="bg-gray-50 min-h-screen p-8 pt-0 max-sm:px-0">
-            <div className="max-w-6xl mx-auto">
+            <div ref={exportContainerRef} className="max-w-6xl mx-auto">
 
                 {company.company_logo && (
                     <Image
@@ -218,7 +226,7 @@ export default function TeamPerformanceReportEmployeePage() {
                         <Button
                             variant="outline"
                             className="export-option flex justify-start items-center gap-4 px-5 py-10 bg-gray-100 rounded-lg hover:bg-gray-200"
-                            onClick={exportPDF}
+                            onClick={exportReviewPDF}
                         >
                             <Download size={24} />
                             <div className="export-option-text text-left">

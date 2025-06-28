@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Home, ChevronLeft, ChevronRight, LogOut, User as UserIcon, } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useReviewCycleEmp } from "@/context/EmployeeCycleContext";
 
 interface SidebarProps {
     collapsed: boolean;
@@ -20,6 +21,21 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onToggle, navItems, }: SidebarProps) {
     const pathname = usePathname();
     const { user, logout } = useAuth();
+    const { reviewCycleEmp } = useReviewCycleEmp();
+
+    let name = '';
+    let role = '';
+    let email = '';
+
+    if(pathname.startsWith("/employee/dashboard")) {
+        name = reviewCycleEmp?.name || '';
+        role = reviewCycleEmp?.role || '';
+        email = reviewCycleEmp?.email || '';
+    } else if (pathname.startsWith("/admin/dashboard")) {
+        name = user?.name || '';
+        role = user?.role || '';
+        email = user?.email || '';
+    }
 
     return (
         <aside className={`fixed inset-y-0 left-0 max-h-screen bg-white border-r flex flex-col transition-[width] duration-200 ${collapsed ? "w-20" : "w-72"}`}>
@@ -60,18 +76,18 @@ export default function Sidebar({ collapsed, onToggle, navItems, }: SidebarProps
 
             {/* User actions + Home */}
             <div className="mt-auto px-2 py-3 border-t flex flex-col gap-2">
-                {!collapsed && user && (
+                {!collapsed && (
                     <div className="flex items-start gap-2 px-2.5 mb-2">
                         <UserIcon className="h-5 w-5 text-gray-500" />
                         <div className="flex flex-col">
                             <span className="text-sm font-medium text-gray-700 truncate">
-                                {user?.name}
+                                {name}
                             </span>
                             <span className="text-xs text-gray-500 truncate">
-                                {user.email}
+                                {email}
                             </span>
                             <span className="text-xs text-gray-500 capitalize">
-                                {user.role}
+                                {role}
                             </span>
                         </div>
                     </div>

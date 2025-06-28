@@ -1,8 +1,9 @@
-// File: app/employee/dashboard/[reviewCycleId]/performance-report/page.tsx
+// File: app/employee/dashboard/[reviewCycleId]/team-performance-report/[employeeId]page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { Mail, Download, AlertCircle } from "lucide-react";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -40,18 +41,20 @@ interface DetailResponseData {
     review_cycle: { name: string };
 }
 
-export default function EmployeePerformanceReportPage() {
-    const { reviewCycleId } = useParams();
+export default function TeamPerformanceReportEmployeePage() {
+    const { reviewCycleId, employeeId } = useParams();
+    const [exportOpen, setExportOpen] = useState(false);
     const [data, setData] = useState<DetailResponseData | null>(null);
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState<boolean>(false);
+
 
     useEffect(() => {
         async function fetchDetails() {
             setLoading(true);
             try {
                 const token = localStorage.getItem("elevu_auth");
-                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-compile-review-for-employee`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-compile-review--employee-report-for-manager`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -59,6 +62,7 @@ export default function EmployeePerformanceReportPage() {
                     },
                     body: JSON.stringify({
                         review_cycle_id: Number(reviewCycleId),
+                        employee_id: Number(employeeId)
                     }),
                 });
                 const json = await res.json();
@@ -77,6 +81,16 @@ export default function EmployeePerformanceReportPage() {
         fetchDetails();
     }, [reviewCycleId]);
 
+
+    const exportPDF = () => {
+        alert(`IMPLEMENTATION NEEDED HERE`);
+        setExportOpen(false);
+    };
+
+    const sendReviewEmail = () => {
+        alert(`IMPLEMENTATION NEEDED HERE`);
+        setExportOpen(false);
+    };
 
 
 
@@ -131,9 +145,6 @@ export default function EmployeePerformanceReportPage() {
     return (
         <div className="bg-gray-50 min-h-screen p-8 pt-0 max-sm:px-0">
             <div className="max-w-6xl mx-auto">
-                <Link href={`/employee/dashboard/${reviewCycleId}`} className="absolute top-3 sm:top-8 left-3 sm:left-8 flex items-center gap-2 rounded-full bg-white border border-gray-300 p-2 sm:p-3 shadow hover:bg-gray-100 transition">
-                    <ArrowLeft className="w-6 h-6 text-gray-700" />
-                </Link>
 
                 {company.company_logo && (
                     <Image
@@ -173,6 +184,55 @@ export default function EmployeePerformanceReportPage() {
                     />
                 )}
             </div>
+
+            {/* Export Controls */}
+            <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+                <DialogTrigger asChild>
+                    <Button
+                        className="export-button fixed bottom-8 right-8 bg-brand hover:bg-brand/90 text-white w-10 sm:w-14 h-10 sm:h-14 rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition"
+                        onClick={() => setExportOpen(true)}
+                    >
+                        <Download size={25} />
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="modal-content fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-8 rounded-2xl w-11/12 max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl">Export Review</DialogTitle>
+                    </DialogHeader>
+                    <div className="export-options flex flex-col gap-4 mt-4">
+                        <Button
+                            variant="outline"
+                            className="export-option flex justify-start items-center gap-4 px-5 py-10 bg-gray-100 rounded-lg hover:bg-gray-200"
+                            onClick={sendReviewEmail}
+                        >
+                            <Mail size={24} />
+                            <div className="export-option-text text-left">
+                                <h4 className="export-option-title font-medium text-gray-900">
+                                    Email Review
+                                </h4>
+                                <p className="export-option-description text-sm font-normal text-gray-500">
+                                    Send this review to employee
+                                </p>
+                            </div>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="export-option flex justify-start items-center gap-4 px-5 py-10 bg-gray-100 rounded-lg hover:bg-gray-200"
+                            onClick={exportPDF}
+                        >
+                            <Download size={24} />
+                            <div className="export-option-text text-left">
+                                <h4 className="export-option-title font-medium text-gray-900">
+                                    Download PDF
+                                </h4>
+                                <p className="export-option-description text-sm font-normal text-gray-500">
+                                    Save review as PDF file
+                                </p>
+                            </div>
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

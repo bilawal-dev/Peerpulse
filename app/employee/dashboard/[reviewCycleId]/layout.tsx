@@ -4,15 +4,35 @@ import Sidebar from "@/components/Dashboard/Sidebar";
 import { useParams, usePathname } from "next/navigation";
 import { useState } from "react";
 import { getEmployeeNavItems } from "./navItems";
+import { EmployeeCycleProvider, useReviewCycleEmp } from "@/context/EmployeeCycleContext";
+import ReviewCycleEmpLoader from "./ReviewCycleEmpLoader";
 
 export default function EmployeeDashboardCycleLayout({ children }: { children: React.ReactNode }) {
+
+    // Wrapping the layout with EmployeeCycleProvider to provide context of Employee (name, role) in particular reviewCycle to child components 
+    return (
+        <EmployeeCycleProvider>
+            <ReviewCycleEmpLoader>
+                <InnerLayout>
+                    {children}
+                </InnerLayout>
+            </ReviewCycleEmpLoader>
+        </EmployeeCycleProvider>
+    );
+}
+
+function InnerLayout({ children }: { children: React.ReactNode }) {
     const [collapsed, setCollapsed] = useState(false);
 
     const { reviewCycleId } = useParams();
 
     const pathName = usePathname();
 
-    const reviewPath = pathName.startsWith(`/employee/dashboard/${reviewCycleId}/review-form`) || pathName.startsWith(`/employee/dashboard/${reviewCycleId}/performance-report`);
+    const { reviewCycleEmp } = useReviewCycleEmp();
+
+    const reviewPath = pathName.startsWith(`/employee/dashboard/${reviewCycleId}/review-form`) || 
+                       pathName.startsWith(`/employee/dashboard/${reviewCycleId}/performance-report`) ||
+                       pathName.startsWith(`/employee/dashboard/${reviewCycleId}/team-performance-report`);
 
     if (reviewPath) {
         return (
@@ -23,7 +43,7 @@ export default function EmployeeDashboardCycleLayout({ children }: { children: R
     }
 
     const prefix = `/employee/dashboard/${reviewCycleId}`;
-    const employeeNavItems = getEmployeeNavItems(prefix);
+    const employeeNavItems = getEmployeeNavItems(prefix, reviewCycleEmp?.role);
 
     return (
         <div className="min-h-screen flex bg-gray-50">

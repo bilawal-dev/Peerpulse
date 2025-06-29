@@ -43,7 +43,7 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
     }
 
     const prefix = `/employee/dashboard/${reviewCycleId}`;
-    const employeeNavItems = getEmployeeNavItems(prefix, reviewCycleEmp?.role);
+    const employeeNavItems = getEmployeeNavItems(prefix, reviewCycleEmp?.role, reviewCycleEmp?.is_compiled_review_access, reviewCycleEmp?.is_manager_team_view_access);
 
     return (
         <div className="min-h-screen flex bg-gray-50">

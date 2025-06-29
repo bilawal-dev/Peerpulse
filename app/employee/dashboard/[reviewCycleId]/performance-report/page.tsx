@@ -10,6 +10,7 @@ import { useParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useReviewCycleEmp } from "@/context/EmployeeCycleContext";
 
 interface EmployeeInfo {
     employee_id: number;
@@ -42,6 +43,7 @@ interface DetailResponseData {
 
 export default function EmployeePerformanceReportPage() {
     const { reviewCycleId } = useParams();
+    const { reviewCycleEmp, reviewCycleEmpLoading } = useReviewCycleEmp();
     const [data, setData] = useState<DetailResponseData | null>(null);
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState<boolean>(false);
@@ -74,34 +76,44 @@ export default function EmployeePerformanceReportPage() {
                 setLoading(false);
             }
         }
+
+
+        if (!reviewCycleEmpLoading) {
+            if (!reviewCycleEmp?.is_compiled_review_access) {
+                setFetchError(true);
+                setLoading(false);
+                toast.error("You don't have permission to see this report.")
+                return;
+            }
+        }
+
         fetchDetails();
     }, [reviewCycleId]);
 
 
 
 
-    // * TODO: Uncomment this section when you have the access control logic ready
-    // if (!loading && !data.is_compiled_review_access) {
-    //     return (
-    //         <div className="bg-gray-50 min-h-[80vh] flex items-center justify-center p-4">
-    //             <Card className="max-w-lg mx-auto text-center p-8 space-y-6">
-    //                 <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-    //                 <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-    //                     Access Restricted
-    //                 </h2>
-    //                 <p className="text-gray-600 text-base pb-5">
-    //                     You don't have permission to see this report.
-    //                     Ask your company admin or manager to grant you access.
-    //                 </p>
-    //                 <Link href={`/employee/dashboard/${reviewCycleId}`}>
-    //                     <Button variant="outline" className="w-full">
-    //                         Back to Dashboard
-    //                     </Button>
-    //                 </Link>
-    //             </Card>
-    //         </div>
-    //     );
-    // }
+    if((!loading && !reviewCycleEmp?.is_compiled_review_access) || (!loading && !data?.is_compiled_review_access)) {
+        return (
+            <div className="bg-gray-50 min-h-[80vh] flex items-center justify-center p-4">
+                <Card className="max-w-lg mx-auto text-center p-8 space-y-6">
+                    <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+                    <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                        Access Restricted
+                    </h2>
+                    <p className="text-gray-600 text-base pb-5">
+                        You don't have permission to see this report.
+                        Ask your company admin or manager to grant you access.
+                    </p>
+                    <Link href={`/employee/dashboard/${reviewCycleId}`}>
+                        <Button variant="outline" className="w-full">
+                            Back to Dashboard
+                        </Button>
+                    </Link>
+                </Card>
+            </div>
+        );
+    }
 
 
     // Generic error UI
@@ -123,7 +135,7 @@ export default function EmployeePerformanceReportPage() {
         );
     }
 
-    if(!data) return null;
+    if (!data) return null;
 
     const { employee, is_review_completed, self_review, peer_review, manager_review, company, review_cycle, } = data;
 

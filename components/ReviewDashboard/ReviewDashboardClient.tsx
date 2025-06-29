@@ -147,7 +147,7 @@ export default function ReviewsDashboardClient({ reviewCycleId }: Props) {
                 />
 
                 {/* Actions */}
-                <ActionsBar />
+                <ActionsBar reviewCycleId={reviewCycleId} />
 
                 {/* Departments */}
                 {loading ? null : filtered.map((dept) => (

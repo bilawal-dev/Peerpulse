@@ -12,7 +12,7 @@ export default function ManagerViewLayout({ children }: { children: React.ReactN
 
     const router = useRouter();
 
-    // * REDIRECT TO EMPLOYEE DASHBOARD IF REVIEW_CYCLE_EMPLOYEE IS NULL OR TO  EMPLOYEE_REVIEW_CYCLE DASHBOARD IF NOT AN MANAGER
+    // * REDIRECT TO EMPLOYEE DASHBOARD IF REVIEW_CYCLE_EMPLOYEE IS NULL OR TO  EMPLOYEE_REVIEW_CYCLE DASHBOARD IF NOT AN MANAGER OR MANAGER VIEW ISN'T ENABLED BY COMPANY
     useEffect(() => {
         if (!reviewCycleEmpLoading) {
             if (!reviewCycleEmp) {

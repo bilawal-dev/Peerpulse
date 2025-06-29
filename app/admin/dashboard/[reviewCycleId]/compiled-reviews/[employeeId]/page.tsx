@@ -99,9 +99,35 @@ export default function EmployeeCompiledReviewsPage() {
         setExportOpen(false);
     };
 
-    const sendReviewEmail = () => {
-        alert(`IMPLEMENTATION NEEDED HERE`);
-        setExportOpen(false);
+    const sendReviewEmail = async () => {
+        try {
+            setExportOpen(false);
+            toast.loading("Sending review email...", { id: "send-review-email" });
+
+            const token = localStorage.getItem("elevu_auth");
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/send-review-report-email-to-employee`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    review_cycle_id: Number(reviewCycleId),
+                    employee_id: Number(employeeId),
+                }),
+            });
+
+            const json = await res.json();
+            
+            if (!json.success) {
+                throw new Error(json.message || "Failed to send review email");
+            }
+
+            toast.success("Review email sent successfully!", { id: "send-review-email" });
+        } catch (error: any) {
+            console.error("Error sending review email:", error);
+            toast.error(error.message || "Failed to send review email", { id: "send-review-email" });
+        }
     };
 
     if (loading || !data) {
@@ -270,7 +296,7 @@ export default function EmployeeCompiledReviewsPage() {
                             <Mail size={24} />
                             <div className="export-option-text text-left">
                                 <h4 className="export-option-title font-medium text-gray-900">
-                                    Email Review
+                                    Send Review
                                 </h4>
                                 <p className="export-option-description text-sm font-normal text-gray-500">
                                     Send this review to employee

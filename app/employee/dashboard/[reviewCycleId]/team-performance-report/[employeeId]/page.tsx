@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { exportPDF } from "@/utils/exportPDF";
+import { useReviewCycleEmp } from "@/context/EmployeeCycleContext";
 
 interface EmployeeInfo {
     employee_id: number;
@@ -33,7 +34,7 @@ interface ReviewItem {
 
 interface DetailResponseData {
     employee: EmployeeInfo;
-    is_compiled_review_access: boolean;
+    is_manager_team_view_access: boolean;
     is_review_completed: boolean;
     self_review: ReviewItem[];
     peer_review: ReviewItem[];
@@ -44,6 +45,7 @@ interface DetailResponseData {
 
 export default function TeamPerformanceReportEmployeePage() {
     const { reviewCycleId, employeeId } = useParams();
+    const { reviewCycleEmp, reviewCycleEmpLoading } = useReviewCycleEmp();
     const [exportOpen, setExportOpen] = useState(false);
     const [data, setData] = useState<DetailResponseData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -57,7 +59,7 @@ export default function TeamPerformanceReportEmployeePage() {
             setLoading(true);
             try {
                 const token = localStorage.getItem("elevu_auth");
-                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-compile-review--employee-report-for-manager`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-compile-review-employee-report-for-manager`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -81,8 +83,18 @@ export default function TeamPerformanceReportEmployeePage() {
                 setLoading(false);
             }
         }
+
+        if (!reviewCycleEmpLoading) {
+            if (!reviewCycleEmp?.is_manager_team_view_access) {
+                setFetchError(true);
+                setLoading(false);
+                toast.error("You don't have permission to see this report.")
+                return;
+            }
+        }
+
         fetchDetails();
-    }, [reviewCycleId]);
+    }, [reviewCycleId, reviewCycleEmp, reviewCycleEmpLoading]);
 
 
     const exportReviewPDF = async () => {
@@ -95,35 +107,60 @@ export default function TeamPerformanceReportEmployeePage() {
         setExportOpen(false);
     };
 
-    const sendReviewEmail = () => {
-        alert(`IMPLEMENTATION NEEDED HERE`);
-        setExportOpen(false);
+    const sendReviewEmail = async () => {
+        try {
+            setExportOpen(false);
+            toast.loading("Sending review email...", { id: "send-review-email" });
+
+            const token = localStorage.getItem("elevu_auth");
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/send-review-report-email-to-employee`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    review_cycle_id: Number(reviewCycleId),
+                    employee_id: Number(employeeId),
+                }),
+            });
+
+            const json = await res.json();
+            
+            if (!json.success) {
+                throw new Error(json.message || "Failed to send review email");
+            }
+
+            toast.success("Review email sent successfully!", { id: "send-review-email" });
+        } catch (error: any) {
+            console.error("Error sending review email:", error);
+            toast.error(error.message || "Failed to send review email", { id: "send-review-email" });
+        }
     };
 
 
 
-    // * TODO: Uncomment this section when you have the access control logic ready
-    // if (!loading && !data.is_compiled_review_access) {
-    //     return (
-    //         <div className="bg-gray-50 min-h-[80vh] flex items-center justify-center p-4">
-    //             <Card className="max-w-lg mx-auto text-center p-8 space-y-6">
-    //                 <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-    //                 <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-    //                     Access Restricted
-    //                 </h2>
-    //                 <p className="text-gray-600 text-base pb-5">
-    //                     You don't have permission to see this report.
-    //                     Ask your company admin or manager to grant you access.
-    //                 </p>
-    //                 <Link href={`/employee/dashboard/${reviewCycleId}`}>
-    //                     <Button variant="outline" className="w-full">
-    //                         Back to Dashboard
-    //                     </Button>
-    //                 </Link>
-    //             </Card>
-    //         </div>
-    //     );
-    // }
+    if ((!loading && !reviewCycleEmp?.is_manager_team_view_access) || (!loading && data && !data.is_manager_team_view_access)) {
+        return (
+            <div className="bg-gray-50 min-h-[80vh] flex items-center justify-center p-4">
+                <Card className="max-w-lg mx-auto text-center p-8 space-y-6">
+                    <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+                    <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                        Access Restricted
+                    </h2>
+                    <p className="text-gray-600 text-base pb-5">
+                        You don't have permission to see this report.
+                        Ask your company admin or manager to grant you access.
+                    </p>
+                    <Link href={`/employee/dashboard/${reviewCycleId}`}>
+                        <Button variant="outline" className="w-full">
+                            Back to Dashboard
+                        </Button>
+                    </Link>
+                </Card>
+            </div>
+        );
+    }
 
 
     // Generic error UI
@@ -216,7 +253,7 @@ export default function TeamPerformanceReportEmployeePage() {
                             <Mail size={24} />
                             <div className="export-option-text text-left">
                                 <h4 className="export-option-title font-medium text-gray-900">
-                                    Email Review
+                                    Send Review
                                 </h4>
                                 <p className="export-option-description text-sm font-normal text-gray-500">
                                     Send this review to employee

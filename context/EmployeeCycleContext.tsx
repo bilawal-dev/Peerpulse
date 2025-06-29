@@ -14,7 +14,8 @@ export interface ReviewCycleEmp {
     role: 'employee' | 'manager';
     isManager: boolean;
     status: string;
-    is_dashboard_allowed: boolean;
+    is_compiled_review_access: boolean,
+    is_manager_team_view_access: boolean,
     review_cycle_id: number;
     review_cycle_name: string;
     company_id: number;

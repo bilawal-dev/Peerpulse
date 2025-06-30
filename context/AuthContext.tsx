@@ -32,7 +32,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // On mount, check for existing token & validate it
+  // On Mount, check for existing token & validate it
   useEffect(() => {
     const token = localStorage.getItem("elevu_auth");
     if (token) {

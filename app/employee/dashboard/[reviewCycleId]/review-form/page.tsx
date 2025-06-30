@@ -45,7 +45,7 @@ export default function ReviewCycleReviewFormPage() {
     const [peers, setPeers] = useState<Peer[]>([]);
     const [manager, setManager] = useState<Peer>();
 
-    const [questions, setQuestions] = useState<{ self: Question[]; peer: Question[]; manager: Question[]; }>({ self: [], peer: [], manager: [] });
+    const [questions, setQuestions] = useState<{ self: Question[]; peer: Question[][]; manager: Question[]; }>({ self: [], peer: [], manager: [] });
 
     const [currentStep, setCurrentStep] = useState(0);
     const [responses, setResponses] = useState<ReviewResponse>({});
@@ -57,8 +57,8 @@ export default function ReviewCycleReviewFormPage() {
             try {
                 const token = localStorage.getItem("elevu_auth");
 
-                // 1) fetch participants
-                const partRes = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-will-review-employee-list`, {
+                // 1) Fetch all review form data in one call
+                const formRes = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-review-form-data`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -67,49 +67,69 @@ export default function ReviewCycleReviewFormPage() {
                     body: JSON.stringify({ review_cycle_id: reviewCycleId }),
                 });
 
-                const partJson = await partRes.json();
+                const formJson = await formRes.json();
 
-                if (!partJson.success) {
+                if (!formJson.success) {
                     setFetchError(true);
-                    throw new Error(partJson.message || "Failed to fetch participants");
+                    throw new Error(formJson.message || "Failed to fetch review form data");
                 }
 
-                const pd = partJson.data;
-                setCompanyName(pd.company.name);
-                setReviewPeriod(pd.review_cycle.name);
-                setEmployeeName(pd.employee_name);
-                setPeers(pd.peer.map((x: any) => ({ id: String(x.employee_id), name: x.name })));
-                setManager({ id: String(pd.manager.employee_id), name: pd.manager.name });
+                const data = formJson.data;
+                
+                // Set basic info
+                setCompanyName(data.company.name);
+                setReviewPeriod(data.review_cycle.name);
+                setEmployeeName(data.employee_name);
+                setPeers(data.peer.map((x: any) => ({ id: String(x.employee_id), name: x.name })));
+                setManager({ id: String(data.manager.employee_id), name: data.manager.name });
 
-                // 2) fetch questions
-                const qRes = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-questions-review`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    },
-                });
-                if (!qRes.ok) throw new Error("Failed to fetch questions");
-                const qJson = await qRes.json();
-                const mapQ = (arr: any[], type: "self" | "peer" | "manager", limit: number) =>
-                    arr
-                        .map((q) => ({
+                // Process questions from the new structure
+                const selfQuestions = data.questions.self
+                    .sort((a: any, b: any) => a.order - b.order)
+                    .map((q: any) => ({
+                        question_id: q.question_id,
+                        type: "self" as const,
+                        name: q.name,
+                        label: q.label,
+                        question: q.question,
+                        order: q.order,
+                        charLimit: q.character_limit,
+                    }));
+
+                const managerQuestions = data.questions.manager
+                    .sort((a: any, b: any) => a.order - b.order)
+                    .map((q: any) => ({
+                        question_id: q.question_id,
+                        type: "manager" as const,
+                        name: q.name,
+                        label: q.label,
+                        question: q.question,
+                        order: q.order,
+                        charLimit: q.character_limit,
+                    }));
+
+                // Process peer questions - each peer has their own personalized questions
+                const peerQuestions = data.questions.peer.map((peerObj: any) => 
+                    peerObj.questions
+                        .sort((a: any, b: any) => a.order - b.order)
+                        .map((q: any) => ({
                             question_id: q.question_id,
-                            type,
+                            type: "peer" as const,
                             name: q.name,
                             label: q.label,
                             question: q.question,
                             order: q.order,
-                            charLimit: limit,
+                            charLimit: q.character_limit,
                         }))
-                        .sort((a, b) => a.order - b.order);
+                );
 
-                const mappedQuestions = {
-                    self: mapQ(qJson.data.self, "self", 100),
-                    peer: mapQ(qJson.data.peer, "peer", 250),
-                    manager: mapQ(qJson.data.manager, "manager", 100),
-                };
-                setQuestions(mappedQuestions);
+                setQuestions({
+                    self: selfQuestions,
+                    peer: peerQuestions,
+                    manager: managerQuestions
+                });
 
-                // 3) fetch any previously submitted answers and prefill
+                // 2) fetch any previously submitted answers and prefill
                 const subRes = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/employee/get-submitted-review-data`, {
                     method: "POST",
                     headers: {
@@ -131,7 +151,7 @@ export default function ReviewCycleReviewFormPage() {
 
                 // peers (step = idx+1)
                 subJson.data.peer.forEach((e: any) => {
-                    const idx = pd.peer.findIndex(
+                    const idx = data.peer.findIndex(
                         (p: any) => String(p.employee_id) === String(e.reviewee_id)
                     );
                     if (idx !== -1) {
@@ -141,7 +161,7 @@ export default function ReviewCycleReviewFormPage() {
 
                 // manager (step = peers.length+1)
                 subJson.data.manager.forEach((e: any) => {
-                    const mgrStep = pd.peer.length + 1;
+                    const mgrStep = data.peer.length + 1;
                     existing[`${e.review_type_label}_${mgrStep}`] = e.answer;
                 });
 
@@ -149,6 +169,7 @@ export default function ReviewCycleReviewFormPage() {
             } catch (err: any) {
                 console.error(err);
                 toast.error(err.message || "Error loading data");
+                setFetchError(true);
             } finally {
                 setLoading(false);
             }
@@ -166,14 +187,17 @@ export default function ReviewCycleReviewFormPage() {
 
     const getStepDescription = () => {
         if (currentStep === 0)
-            return "Your self-assessment responses will be viewed by your manager.";
+            return "Your self-assessment responses will be viewed by your manager and incorporated into the performance review process.";
         if (currentStep <= peers.length) return "Please provide constructive feedback for your peer.";
         return "Employee feedback for your manager.";
     };
 
     const getCurrentQuestions = () => {
         if (currentStep === 0) return questions.self;
-        if (currentStep <= peers.length) return questions.peer;
+        if (currentStep <= peers.length) {
+            const peerIndex = currentStep - 1;
+            return questions.peer[peerIndex] || [];
+        }
         return questions.manager;
     };
 
@@ -187,7 +211,8 @@ export default function ReviewCycleReviewFormPage() {
 
     const getCharLimitForQuestion = (key: string): number => {
         const base = key.split("_")[0];
-        const all = [...questions.self, ...questions.peer, ...questions.manager];
+        const allPeerQuestions = questions.peer.flat();
+        const all = [...questions.self, ...allPeerQuestions, ...questions.manager];
         const q = all.find((x) => x.label === base);
         return q?.charLimit || 250;
     };
@@ -199,6 +224,10 @@ export default function ReviewCycleReviewFormPage() {
     const handleNext = async () => {
         if (isSubmitting) return;
         setIsSubmitting(true);
+        
+        // Start loading toast
+        toast.loading("Saving your feedback...", { id: "give-review" });
+        
         try {
             const token = localStorage.getItem("elevu_auth");
 
@@ -241,14 +270,15 @@ export default function ReviewCycleReviewFormPage() {
             if (!json.success) throw new Error(json.message || "Submit failed");
 
             if (currentStep === totalSteps - 1) {
-                toast.success("All feedback submitted! Thank you.");
+                toast.success("All feedback submitted successfully! Thank you.", { id: "give-review" });
                 router.push(`/employee/dashboard/${reviewCycleId}`);
             } else {
+                toast.success("Feedback saved! Moving to next section.", { id: "give-review" });
                 setCurrentStep((s) => s + 1);
             }
         } catch (err: any) {
             console.error(err);
-            toast.error(err.message || "Error submitting feedback");
+            toast.error(err.message || "Error submitting feedback", { id: "give-review" });
         } finally {
             setIsSubmitting(false);
         }

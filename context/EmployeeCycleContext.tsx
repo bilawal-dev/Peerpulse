@@ -18,6 +18,8 @@ export interface ReviewCycleEmp {
     is_manager_team_view_access: boolean,
     review_cycle_id: number;
     review_cycle_name: string;
+    review_cycle_start_date: string;
+    review_cycle_end_date: string;
     company_id: number;
     company_name: string;
 }

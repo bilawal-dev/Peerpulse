@@ -10,6 +10,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import ButtonLoader from "@/components/Common/ButtonLoader";
+import { AlertCircle, Lock } from "lucide-react";
 
 export type EditCycleValues = {
     label: string;
@@ -161,12 +162,42 @@ export default function EditReviewCycleSidebar({ initial, onCancel, onSubmit, }:
                     />
                 </div>
 
-                <div className="flex items-center justify-between">
-                    <Label>Peer Review</Label>
-                    <Switch
-                        checked={reviewEnabled}
-                        onCheckedChange={(v) => setReviewEnabled(v)}
-                    />
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <Label>Peer Review</Label>
+                        <Switch
+                            checked={reviewEnabled}
+                            onCheckedChange={(v) => setReviewEnabled(v)}
+                        />
+                    </div>
+                    
+                    {reviewEnabled && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                            <div className="flex items-start space-x-2">
+                                <Lock className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                                <div className="text-sm">
+                                    <p className="font-medium text-amber-800">Questionnaire Locked</p>
+                                    <p className="text-amber-700 mt-1">
+                                        Review Form Editor access is disabled when peer reviews are enabled to ensure consistency.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {!reviewEnabled && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <div className="flex items-start space-x-2">
+                                <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                                <div className="text-sm">
+                                    <p className="font-medium text-blue-800">Note</p>
+                                    <p className="text-blue-700 mt-1">
+                                        Enabling peer reviews will lock the Review Form Editor to maintain evaluation consistency.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

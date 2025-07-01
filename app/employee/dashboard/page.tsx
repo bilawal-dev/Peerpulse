@@ -244,7 +244,7 @@ export default function EmployeeDashboardRootPage() {
                         <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
                             <div>
                                 <h2 className="text-3xl font-poppins text-gray-900 font-semibold">Available Review Cycles</h2>
-                                <p className="text-gray-600 mt-1">Select a review cycle to participate in performance evaluations</p>
+                                <p className="text-gray-600 mt-1">Enter review cycles to participate in peer-selection, fill review forms, and access performance reports</p>
                             </div>
                         </div>
                     </CardHeader>

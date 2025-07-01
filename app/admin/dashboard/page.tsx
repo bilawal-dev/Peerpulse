@@ -313,7 +313,8 @@ export default function AdminDashboardRootPage() {
                         <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
                             <div>
                                 <h2 className="text-3xl font-poppins text-gray-900 font-semibold">Review Cycles</h2>
-                                <p className="text-gray-600 mt-1">Create and manage your organization's performance review cycles</p>
+                                <p className="text-gray-600 mt-1">Create and manage 360° performance review cycles to handle employee management, design questionnaires, set up email notifications, and access compiled analytics</p>
+                                <p className="text-gray-500 text-sm mt-1">Enter into a review cycle to configure review forms, manage manual pairing, view compiled reviews, and monitor employee progress through live dashboards</p>
                             </div>
                             <Button
                                 onClick={openAdd}
@@ -321,20 +322,20 @@ export default function AdminDashboardRootPage() {
                             >
                                 <PlusCircle className="mr-2 h-5 w-5" />
                                 Create New Review Cycle
-                            </Button>
+                    </Button>
                         </div>
-                    </CardHeader>
+                </CardHeader>
 
                     <CardContent className="max-sm:px-6 p-8">
-                        {isLoading ? <ReviewCyclesSkeleton /> : (
-                            <ReviewCycleList
-                                cycles={cycles}
-                                onEdit={openEdit}
-                                onDelete={openDelete}
-                            />
-                        )}
-                    </CardContent>
-                </Card>
+                    {isLoading ? <ReviewCyclesSkeleton /> : (
+                        <ReviewCycleList
+                            cycles={cycles}
+                            onEdit={openEdit}
+                            onDelete={openDelete}
+                        />
+                    )}
+                </CardContent>
+            </Card>
             </div>
 
             {/* Add */}

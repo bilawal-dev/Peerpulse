@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Edit2, MailPlus, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import toast from "react-hot-toast";
+import ButtonLoader from "@/components/Common/ButtonLoader";
 
 //
 // We define a TypeScript type that matches the shape returned by GET /company/get-all-employee.
@@ -68,6 +69,11 @@ export default function EmployeesPage() {
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
 
   const [isInviteAllLoading, setIsInviteAllLoading] = useState(false);
+  const [isAddingEmployee, setIsAddingEmployee] = useState(false);
+  const [isEditingEmployee, setIsEditingEmployee] = useState(false);
+  const [isDeletingEmployee, setIsDeletingEmployee] = useState(false);
+  const [isUploadingEmployees, setIsUploadingEmployees] = useState(false);
+  const [invitingEmployeeIds, setInvitingEmployeeIds] = useState<Set<number>>(new Set());
 
   const reviewCycleId = Number(useParams().reviewCycleId);
 
@@ -89,20 +95,14 @@ export default function EmployeesPage() {
         }),
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(
-          `GET /company/get-all-employee responded with ${response.status}: ${text}`
-        );
-      }
-
       const json = await response.json();
-      // json.data is the array of FetchedEmployee
-      console.log("Fetched employees:", json.data);
+      if(!json.success) {
+        throw new Error(json.message || "Failed to fetch employees");
+      }
       setEmployees(json.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching employees:", error);
-      // Optionally show a toast/alert here
+      toast.error(error.message || "Failed to fetch employees");
     }
   };
 
@@ -119,6 +119,8 @@ export default function EmployeesPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setIsUploadingEmployees(true);
+    
     // 2.1 Read CSV as text
     const text = await file.text();
 
@@ -142,6 +144,8 @@ export default function EmployeesPage() {
     }));
 
     try {
+      toast.loading("Uploading employees...", { id: "upload-employees" });
+      
       const token = localStorage.getItem("elevu_auth");
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/upload-employees`, {
@@ -156,21 +160,19 @@ export default function EmployeesPage() {
         }),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `POST /company/upload-employees responded with ${response.status}: ${errorText}`
-        );
+      const json = await response.json();
+      if(!json.success) {
+        throw new Error(json.message || "Failed to upload employees");
       }
+      toast.success(json.message || "Employees uploaded successfully!", { id: "upload-employees" });
 
       // If the upload succeeded, re-fetch the table data
       await fetchEmployees();
     } catch (error: any) {
       console.error("Error uploading employees:", error);
-      alert(
-        "There was a problem uploading employees to the server:\n" +
-        error.message
-      );
+      toast.error(error.message || "Failed to upload employees", { id: "upload-employees" });
+    } finally {
+      setIsUploadingEmployees(false);
     }
   };
 
@@ -203,7 +205,10 @@ export default function EmployeesPage() {
   // 4) Add Employee → POST to /company/single-add-employee, then re-fetch
   //
   const handleAdd = async () => {
+    setIsAddingEmployee(true);
     try {
+      toast.loading("Adding employee...", { id: "add-employee" });
+      
       const token = localStorage.getItem("elevu_auth");
       const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/single-add-employee`, {
         method: "POST",
@@ -220,12 +225,12 @@ export default function EmployeesPage() {
         }),
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(
-          `POST /company/single-add-employee responded with ${response.status}: ${text}`
-        );
+      const json = await response.json();
+      if(!json.success) {
+        throw new Error(json.message || "Failed to add employee");
       }
+
+      toast.success(json.message || "Employee added successfully!", { id: "add-employee" });
 
       // After a successful add, re-fetch the full employee list
       await fetchEmployees();
@@ -235,9 +240,9 @@ export default function EmployeesPage() {
       setNewEmp(initialEmployeeState);
     } catch (error: any) {
       console.error("Error adding employee:", error);
-      alert(
-        "Could not add employee:\n" + (error.message || "Unknown server error")
-      );
+      toast.error(error.message || "Failed to add employee", { id: "add-employee" });
+    } finally {
+      setIsAddingEmployee(false);
     }
   };
 
@@ -260,7 +265,10 @@ export default function EmployeesPage() {
   const handleEditSave = async () => {
     if (editIndex === null) return;
 
+    setIsEditingEmployee(true);
     try {
+      toast.loading("Updating employee...", { id: "update-employee" });
+      
       const token = localStorage.getItem("elevu_auth");
       const targetEmp = employees[editIndex];
 
@@ -279,12 +287,12 @@ export default function EmployeesPage() {
         }),
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(
-          `PUT /company/update-employee responded with ${response.status}: ${text}`
-        );
+      const json = await response.json();
+      if(!json.success) {
+        throw new Error(json.message || "Failed to update employee");
       }
+
+      toast.success(json.message || "Employee updated successfully!", { id: "update-employee" });
 
       // After a successful update, re-fetch the full employee list
       await fetchEmployees();
@@ -295,9 +303,9 @@ export default function EmployeesPage() {
       setEditEmp(initialEmployeeState);
     } catch (error: any) {
       console.error("Error updating employee:", error);
-      alert(
-        "Could not update employee:\n" + (error.message || "Unknown server error")
-      );
+      toast.error(error.message || "Failed to update employee", { id: "update-employee" });
+    } finally {
+      setIsEditingEmployee(false);
     }
   };
 
@@ -312,7 +320,10 @@ export default function EmployeesPage() {
   const handleDeleteConfirm = async () => {
     if (deleteIndex === null) return;
 
+    setIsDeletingEmployee(true);
     try {
+      toast.loading("Deleting employee...", { id: "delete-employee" });
+      
       const token = localStorage.getItem("elevu_auth");
       const targetEmp = employees[deleteIndex];
 
@@ -328,12 +339,12 @@ export default function EmployeesPage() {
         }),
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(
-          `DELETE /company/delete-employee responded with ${response.status}: ${text}`
-        );
+      const json = await response.json();
+      if(!json.success) {
+        throw new Error(json.message || "Failed to delete employee");
       }
+
+      toast.success(json.message || "Employee deleted successfully!", { id: "delete-employee" });
 
       // After a successful delete, re-fetch the full employee list
       await fetchEmployees();
@@ -343,9 +354,9 @@ export default function EmployeesPage() {
       setDeleteIndex(null);
     } catch (error: any) {
       console.error("Error deleting employee:", error);
-      alert(
-        "Could not delete employee:\n" + (error.message || "Unknown server error")
-      );
+      toast.error(error.message || "Failed to delete employee", { id: "delete-employee" });
+    } finally {
+      setIsDeletingEmployee(false);
     }
   };
 
@@ -353,7 +364,10 @@ export default function EmployeesPage() {
   // 7) Invite a single employee → POST to /company/invite-employee, no re-fetch needed
   //
   const handleInvite = async (employeeId: number) => {
+    setInvitingEmployeeIds(prev => new Set(prev).add(employeeId));
     try {
+      toast.loading("Sending invitation...", { id: `invite-employee-${employeeId}` });
+      
       const token = localStorage.getItem("elevu_auth");
       const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/invite-employee`, {
         method: "POST",
@@ -366,12 +380,12 @@ export default function EmployeesPage() {
           review_cycle_id: reviewCycleId
         }),
       });
-      const json = await response.json();
 
+      const json = await response.json();
       if(!json.success) {
         throw new Error(json.message || "Failed to invite employee");
       }
-      toast.success("Invitation sent to employee successfully.");
+      toast.success("Invitation sent to employee successfully.", { id: `invite-employee-${employeeId}` });
 
       // * UPDATE STATUS LOCALLY
       setEmployees((prev) => {
@@ -384,7 +398,13 @@ export default function EmployeesPage() {
       })
     } catch (error: any) {
       console.error("Error inviting employee:", error);
-      toast.error(error.message || "Unknown server error");
+      toast.error(error.message || "Failed to send invitation", { id: `invite-employee-${employeeId}` });
+    } finally {
+      setInvitingEmployeeIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(employeeId);
+        return newSet;
+      });
     }
   };
 
@@ -394,6 +414,8 @@ export default function EmployeesPage() {
   const handleInviteAll = async () => {
     setIsInviteAllLoading(true);
     try {
+      toast.loading("Sending invitations to all employees...", { id: "invite-all-employees" });
+      
       const token = localStorage.getItem("elevu_auth");
       const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/invite-all-employee`, {
         method: "POST",
@@ -408,7 +430,7 @@ export default function EmployeesPage() {
       if(!json.success) {
         throw new Error(json.message || "Failed to invite employees");
       }
-      toast.success("Invitations sent to all employees successfully.");
+      toast.success("Invitations sent to all employees successfully.", { id: "invite-all-employees" });
 
       // * UPDATE STATUS LOCALLY
       setEmployees((prev) => {
@@ -421,7 +443,7 @@ export default function EmployeesPage() {
       });
     } catch (error: any) {
       console.error("Error inviting all employees:", error);
-      toast.error(error.message || "Unknown server error");
+      toast.error(error.message || "Failed to send invitations", { id: "invite-all-employees" });
     } finally {
           setIsInviteAllLoading(false);
     }
@@ -485,8 +507,12 @@ export default function EmployeesPage() {
               Invite All Employees
             </Button>
 
-            <Button onClick={() => fileInputRef.current?.click()} className="bg-blue-600 hover:bg-blue-700">
-              Upload Employees
+            <Button 
+              disabled={isUploadingEmployees} 
+              onClick={() => fileInputRef.current?.click()} 
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isUploadingEmployees ? <><ButtonLoader /> Uploading...</> : "Upload Employees"}
             </Button>
 
             <input
@@ -531,7 +557,9 @@ export default function EmployeesPage() {
                   <Button variant="outline" onClick={() => setAddOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleAdd}>Save</Button>
+                  <Button disabled={isAddingEmployee} onClick={handleAdd}>
+                    {isAddingEmployee ? <ButtonLoader /> : "Save"}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -598,8 +626,16 @@ export default function EmployeesPage() {
                     <button onClick={() => onEditClick(idx)}>
                       <Edit2 className="h-5 w-5 text-blue-500 hover:text-blue-700" />
                     </button>
-                    <button onClick={() => handleInvite(emp.employee_id)}>
-                      <MailPlus className="h-5 w-5 text-blue-500 hover:text-blue-700" />
+                    <button 
+                      disabled={invitingEmployeeIds.has(emp.employee_id)}
+                      onClick={() => handleInvite(emp.employee_id)}
+                      className="flex items-center justify-center w-5 h-5"
+                    >
+                      {invitingEmployeeIds.has(emp.employee_id) ? (
+                        <div className="w-3 h-3 border border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <MailPlus className="h-5 w-5 text-blue-500 hover:text-blue-700" />
+                      )}
                     </button>
                     <button onClick={() => onDeleteClick(idx)}>
                       <Trash2 className="h-5 w-5 text-red-500 hover:text-red-700" />
@@ -652,7 +688,9 @@ export default function EmployeesPage() {
               <Button variant="outline" onClick={() => setEditOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleEditSave}>Save Changes</Button>
+              <Button disabled={isEditingEmployee} onClick={handleEditSave}>
+                {isEditingEmployee ? <ButtonLoader /> : "Save Changes"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -678,10 +716,11 @@ export default function EmployeesPage() {
                 Cancel
               </Button>
               <Button
+                disabled={isDeletingEmployee}
                 className="bg-red-600 hover:bg-red-700"
                 onClick={handleDeleteConfirm}
               >
-                Delete
+                {isDeletingEmployee ? <ButtonLoader /> : "Delete"}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -11,7 +11,7 @@ const Footer = () => {
   return (
     <footer className="pt-[30px] pb-[40px]">
       <div className="flex items-center justify-center gap-x-[12px]">
-        <p className="font-pacifico text-brand text-2xl">PeerPulse</p>
+        <p className="font-brand text-brand text-2xl">PeerPulse</p>
       </div>
 
       <ul className="flex flex-row justify-center gap-x-5 pt-5 gap-y-[32px] text-[#36485C]  ">

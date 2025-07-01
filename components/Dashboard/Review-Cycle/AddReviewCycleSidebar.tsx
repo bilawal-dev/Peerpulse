@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { format } from "date-fns";
+import ButtonLoader from "@/components/Common/ButtonLoader";
 
 export type NewCycleValues = {
     label: string;
@@ -31,7 +32,29 @@ export default function AddReviewCycleSidebar({ onCancel, onSubmit }: Props) {
     const [maxPeers, setMaxPeers] = useState<number | undefined>(undefined);
     const [requiredReviewers, setRequiredReviewers] = useState<number | undefined>(undefined);
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const disabledSave = !label.trim();
+
+    async function handleSubmit() {
+        setIsSubmitting(true);
+
+        try {
+            const isSuccess = await onSubmit({ label: label.trim(), startDate, endDate, maxPeers, requiredReviewers });
+
+            if (isSuccess) {
+                setLabel('');
+                setStartDate(new Date());
+                setEndDate(undefined);
+                setMaxPeers(undefined);
+                setRequiredReviewers(undefined);
+            }
+        }
+        catch {
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
 
     return (
         <DialogContent className="fixed right-0 top-0 h-full w-full max-w-md p-6 bg-white shadow-lg overflow-auto animate-in duration-300 slide-in-from-right-1/2">
@@ -120,18 +143,8 @@ export default function AddReviewCycleSidebar({ onCancel, onSubmit }: Props) {
                 <Button variant="outline" onClick={onCancel}>
                     Cancel
                 </Button>
-                <Button disabled={disabledSave} onClick={async () => {
-                    const isSuccess = await onSubmit({ label: label.trim(), startDate, endDate, maxPeers, requiredReviewers });
-
-                    if (isSuccess) {
-                        setLabel('');
-                        setStartDate(new Date());
-                        setEndDate(undefined);
-                        setMaxPeers(undefined);
-                        setRequiredReviewers(undefined);
-                    }
-                }}>
-                    Save
+                <Button disabled={disabledSave || isSubmitting} className="px-8" onClick={handleSubmit}>
+                    {isSubmitting ? <ButtonLoader /> : "Save"}
                 </Button>
             </DialogFooter>
         </DialogContent>

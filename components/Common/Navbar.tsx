@@ -34,7 +34,7 @@ export default function Navbar() {
     <header className="fixed w-full bg-white z-50">
       <nav className="lg:container lg:px-[20px] lg:mx-auto flex items-center justify-between px-[10px] sm:px-[20px] py-[16px]">
         <Link href="/" className="flex items-center">
-          <span className="font-pacifico text-brand text-3xl">PeerPulse</span>
+          <span className="font-brand text-brand text-3xl">PeerPulse</span>
         </Link>
 
         {/* Desktop Menu */}

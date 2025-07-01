@@ -1,7 +1,8 @@
 import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 import type { Metadata } from "next";
-import { Pacifico, Poppins } from 'next/font/google'
+import { Poppins } from 'next/font/google'
+import localFont from 'next/font/local'
 import { Toaster } from "react-hot-toast";
 import ClientLoader from "./ClientLoader";
 
@@ -11,10 +12,10 @@ const poppins = Poppins({
   variable: '--font-poppins',
 })
 
-const pacifico = Pacifico({
-  weight: "400",
-  subsets: ["latin"],
-  variable: '--font-pacifico',
+const mooxy = localFont({
+  src: '../public/fonts/mooxy.ttf',
+  variable: '--font-mooxy',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children, }: Readonly<{ children: React.ReactNode; }>) {
   return (
     <html lang="en">
-      <body className={`antialiased ${poppins.className} ${pacifico.variable}`} >
+      <body className={`antialiased ${poppins.className} ${mooxy.variable}`} >
         <Toaster />
         <AuthProvider>
           <ClientLoader>

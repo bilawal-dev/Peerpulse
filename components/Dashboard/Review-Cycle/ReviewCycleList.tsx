@@ -92,28 +92,24 @@ export default function ReviewCycleList({ cycles, onEdit, onDelete, }: ReviewCyc
                         </div>
 
                         {/* Actions */}
-                        <div className="flex pt-4 justify-between items-center">
+                        <div className="flex pt-4 justify-between items-center ">
                             <Link href={`/admin/dashboard/${cycle.review_cycle_id}/`}>
                                 <Button>Enter Review Cycle</Button>
                             </Link>
 
-                            <div className="border-t-2 border-gray-100">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
+                            <div className="flex items-center gap-2 sm:gap-3 border-t-2 border-gray-100">
+                                <button
                                     onClick={() => onEdit(cycle)}
                                     aria-label="Edit cycle"
                                 >
-                                    <Edit2 className="h-5 w-5 text-blue-500" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
+                                    <Edit2 className="h-4 w-4 text-blue-500" />
+                                </button>
+                                <button
                                     onClick={() => onDelete(cycle.review_cycle_id)}
                                     aria-label="Delete cycle"
                                 >
-                                    <Trash2 className="h-5 w-5 text-red-500" />
-                                </Button>
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                </button>
                             </div>
                         </div>
 

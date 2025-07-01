@@ -63,6 +63,8 @@ export default function DashboardReviewCyclePage() {
     }
     async function handleAdd(vals: NewCycleValues) {
         try {
+            toast.loading("Creating review cycle...", { id: "create-cycle" });
+            
             const token = localStorage.getItem("elevu_auth");
             const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/add-review-cycle`, {
                 method: "POST",
@@ -79,12 +81,12 @@ export default function DashboardReviewCyclePage() {
             if (!json.success) {
                 throw new Error(json.message || "Failed to create cycle");
             }
-            toast.success("Cycle created");
+            toast.success(json.message || "Review cycle created successfully!", { id: "create-cycle" });
             await fetchAllCycles();
             return true;
         } catch (error: any) {
             console.error("Error creating cycle:", error);
-            toast.error(error.message || "Failed to create cycle");
+            toast.error(error.message || "Failed to create review cycle", { id: "create-cycle" });
             return false;
         } finally {
             setAddOpen(false);
@@ -108,10 +110,12 @@ export default function DashboardReviewCyclePage() {
     }
     async function handleEdit(vals: EditCycleValues) {
         try {
+            toast.loading("Updating review cycle...", { id: "update-cycle" });
+            
             const token = localStorage.getItem("elevu_auth");
 
             // 1) core update
-            await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-review-cycle`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-review-cycle`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -124,44 +128,26 @@ export default function DashboardReviewCyclePage() {
                     end_date: (vals.endDate || vals.startDate).toISOString(),
                     max_peer_selection: vals.maxPeers || 0,
                     max_reviews_allowed: vals.requiredReviewers || 0,
-                }),
-            }
-            );
-
-            // 2) peer-selection toggle
-            await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-peer-selection-status`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    review_cycle_id: Number(editId),
                     is_peer_selection_enabled: vals.isPeerSelectionEnabled,
-                }),
-            });
-
-            // 3) review toggle
-            await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/update-review-status`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    review_cycle_id: Number(editId),
                     is_review_enabled: vals.isReviewEnabled,
                 }),
             });
 
-            toast.success("Cycle updated");
+            const json = await res.json();
+            if (!json.success) {
+                throw new Error(json.message || "Failed to update cycle");
+            }
+
+            toast.success(json.message || "Review cycle updated successfully!", { id: "update-cycle" });
             await fetchAllCycles();
-        } catch {
-            toast.error("Failed to update cycle");
+        } catch (error: any) {
+            console.error("Error updating cycle:", error);
+            toast.error(error.message || "Failed to update review cycle", { id: "update-cycle" });
         } finally {
             setEditOpen(false);
         }
     }
+
 
     // delete
     function openDelete(id: number) {
@@ -199,7 +185,7 @@ export default function DashboardReviewCyclePage() {
                 <CardHeader className="flex flex-row justify-between items-center">
                     <h2 className="text-2xl font-semibold">Review Cycles</h2>
                     <Button onClick={openAdd} className="flex items-center bg-blue-600 hover:bg-blue-700">
-                        <PlusCircle className="mr-2 h-5 w-5" /> Create New
+                        <PlusCircle className="mr-2 h-5 w-5" /> Create New Review Cycle
                     </Button>
                 </CardHeader>
 

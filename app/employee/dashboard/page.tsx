@@ -11,7 +11,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue, } from "@/components/ui/select";
-import { Home, LogOut, User } from "lucide-react";
+import { Home, LogOut, User, Calendar, Users, BarChart3, Search } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 interface ReviewCycle {
@@ -96,7 +96,8 @@ export default function EmployeeDashboardRootPage() {
     // Stats
     const total = cycles.length;
     const activeCount = cycles.filter((c) => c.is_active).length;
-    const inactiveCount = total - activeCount;
+    const peerSelectionEnabledCount = cycles.filter((c) => c.is_peer_selection_enabled).length;
+    const reviewEnabledCount = cycles.filter((c) => c.is_review_enabled).length;
 
     // apply search + filter to cycles
     const visibleCycles = useMemo(
@@ -117,171 +118,261 @@ export default function EmployeeDashboardRootPage() {
     }
 
     return (
-        <div className="p-8 space-y-6">
-            {/* — Top Bar — */}
-            <header className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-900">
-                    Select a Review Cycle
-                </h1>
-                <div className="flex items-center space-x-4">
-                    <Link href="/" className="text-gray-600 hover:text-gray-900">
-                        <Home className="w-6 h-6" />
-                    </Link>
-
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <button className="w-8 h-8 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center font-medium hover:bg-gray-300 transition" aria-label="User menu" >
-                                <User className="w-5 h-5" />
-                            </button>
-                        </PopoverTrigger>
-                        <PopoverContent align="end" className="w-48 p-2">
-                            <div className="pb-2 border-b mb-2">
-                                <p className="text-sm capitalize font-medium">{user?.name}</p>
-                                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                                <p className="text-xs capitalize text-gray-500 truncate">{user?.role}</p>
-                            </div>
-                            <button onClick={() => logout()} className="flex items-center gap-2 w-full px-2 py-1 text-sm hover:bg-gray-100 rounded">
-                                <LogOut className="w-4 h-4" /> Logout
-                            </button>
-                        </PopoverContent>
-                    </Popover>
-                </div>
-            </header>
-
-            {/* — Quick Summary Cards — */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Card className="text-center">
-                    <CardContent>
-                        <h3 className="text-lg font-medium">Total Cycles</h3>
-                        <p className="mt-2 text-2xl font-bold">{total}</p>
-                    </CardContent>
-                </Card>
-                <Card className="text-center">
-                    <CardContent>
-                        <h3 className="text-lg font-medium">Active</h3>
-                        <p className="mt-2 text-2xl font-bold text-green-600">
-                            {activeCount}
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card className="text-center">
-                    <CardContent>
-                        <h3 className="text-lg font-medium">Inactive</h3>
-                        <p className="mt-2 text-2xl font-bold text-red-600">
-                            {inactiveCount}
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* — Filter & Search — */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center space-x-2">
-                    <Label htmlFor="filter" className="whitespace-nowrap">Filter By Company:</Label>
-                    <Select value={filter} onValueChange={setFilter}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                            {companies.map(name => (
-                                <SelectItem key={name} value={name}>
-                                    {name === "all" ? "All" : name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <Label htmlFor="search">Search:</Label>
-                    <Input
-                        id="search"
-                        placeholder="Cycle name…"
-                        className="w-full sm:w-64"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
-                </div>
-            </div>
-
-            {/* — Cycle Cards Grid (unchanged!) — */}
-            <div className="grid gap-6 grid-cols-1 md:grid-cols-2 2xl:grid-cols-3">
-                {loading ? (
-                    <ReviewCycleSkeletons />
-                ) : visibleCycles.length > 0 ? (
-                    visibleCycles.map((c) => (
-                        <Card key={c.review_cycle_id} className="border border-gray-200 rounded-lg hover:shadow-lg transition-shadow">
-
-                            <CardContent className="flex items-start space-x-3 py-4">
-                                {c.companyLogo && (
-                                    <img
-                                        src={c.companyLogo}
-                                        alt={c.companyName}
-                                        className="w-12 h-12 rounded-full object-cover"
-                                    />
-                                )}
-                                <div>
-                                    <div className="text-sm font-medium">{c.companyName}</div>
-                                    <div className="text-xs text-gray-500">{c.companyEmail}</div>
-                                    <div className="text-xs text-gray-500">{c.companyMobile}</div>
-                                    <div className="text-xs text-gray-500">{c.companyDescription}</div>
-                                </div>
-                            </CardContent>
-
-                            <CardHeader className="flex justify-between items-start border-b border-gray-100 py-0 pb-3">
-                                <h2 className="text-xl font-semibold text-gray-800">
-                                    {c.name}
-                                </h2>
-                                <div className="flex flex-wrap gap-2">
-                                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${c.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                                        {c.is_active ? "Active" : "Inactive"}
-                                    </span>
-                                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${c.is_peer_selection_enabled ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-600"}`}>
-                                        Peer Selection: {c.is_peer_selection_enabled ? "On" : "Off"}
-                                    </span>
-                                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${c.is_review_enabled ? "bg-indigo-100 text-indigo-800" : "bg-gray-100 text-gray-600"}`}>
-                                        Review Forms: {c.is_review_enabled ? "On" : "Off"}
-                                    </span>
-                                </div>
-                            </CardHeader>
-
-
-                            <CardContent className="grid grid-cols-2 gap-4 text-sm text-gray-700 pt-2">
-                                <div>
-                                    <strong>Start:</strong>
-                                    <div>{new Date(c.start_date).toLocaleString()}</div>
-                                </div>
-                                <div>
-                                    <strong>End:</strong>
-                                    <div>{new Date(c.end_date).toLocaleString()}</div>
-                                </div>
-                                <div>
-                                    <strong>Max Peers:</strong>
-                                    <div>{c.max_peer_selection}</div>
-                                </div>
-                                <div>
-                                    <strong>Max Reviews:</strong>
-                                    <div>{c.max_reviews_allowed}</div>
-                                </div>
-                                <div>
-                                    <strong>Created at:</strong>
-                                    <div>{new Date(c.created_at).toLocaleString()}</div>
-                                </div>
-                                <div>
-                                    <strong>Updated at:</strong>
-                                    <div>{new Date(c.updated_at).toLocaleString()}</div>
-                                </div>
-                            </CardContent>
-
-                            <div className="p-4 pt-0 flex">
-                                <Link href={`/employee/dashboard/${c.review_cycle_id}/`}>
-                                    <Button>Enter Review Cycle</Button>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+            {/* Beautiful Header Banner */}
+            <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-brand overflow-hidden">
+                <div className="absolute inset-0 bg-black/10"></div>
+                <div className="relative px-8 py-12">
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-start md:items-center justify-between">
+                            <h1 className="text-4xl md:text-5xl font-poppins text-white font-bold tracking-tight">
+                                PeerPulse Employee Dashboard
+                            </h1>
+                            {/* User Menu in Header */}
+                            <div className="flex items-center space-x-4">
+                                <Link href="/" className="text-white/80 hover:text-white transition-colors">
+                                    <Home className="w-6 h-6" />
                                 </Link>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <button className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white flex items-center justify-center font-medium hover:bg-white/30 transition-all border border-white/20" aria-label="User menu">
+                                            <User className="w-5 h-5" />
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent align="end" className="w-56 p-3 bg-white/95 backdrop-blur-sm border-white/20">
+                                        <div className="pb-3 border-b mb-3">
+                                            <p className="text-sm font-semibold text-gray-900 capitalize">{user?.name}</p>
+                                            <p className="text-xs text-gray-600 truncate">{user?.email}</p>
+                                            <p className="text-xs text-blue-600 font-medium capitalize mt-1">{user?.role}</p>
+                                        </div>
+                                        <button onClick={() => logout()} className="flex items-center gap-2 w-full py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                                            <LogOut className="w-4 h-4" />
+                                            Sign Out
+                                        </button>
+                                    </PopoverContent>
+                                </Popover>
                             </div>
-                        </Card>
-                    ))
-                ) : (
-                    <p className="col-span-full text-center text-gray-500">
-                        No Review Cycles Found
-                    </p>
-                )}
+                        </div>
+                        <div className="space-y-4">
+                            <p className="text-xl text-blue-100 font-light max-w-2xl">
+                                Access your assigned review cycles and participate in performance evaluations across different organizations
+                            </p>
+                            <div className="flex flex-wrap gap-6 items-center text-blue-100">
+                                <div className="flex items-center space-x-2">
+                                    <Calendar className="w-5 h-5" />
+                                    <span className="text-sm">Review Participation</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Users className="w-5 h-5" />
+                                    <span className="text-sm">Peer Evaluation</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <BarChart3 className="w-5 h-5" />
+                                    <span className="text-sm">Performance Reports</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="px-8 -mt-6 relative z-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg hover:shadow-xl transition-all">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">Total Cycles</p>
+                                    <p className="text-3xl font-bold text-gray-900">{total}</p>
+                                </div>
+                                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                    <Calendar className="w-6 h-6 text-green-600" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg hover:shadow-xl transition-all">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">Active Cycles</p>
+                                    <p className="text-3xl font-bold text-gray-900">{activeCount}</p>
+                                </div>
+                                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                    <BarChart3 className="w-6 h-6 text-green-600" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg hover:shadow-xl transition-all">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">Peer Selection Enabled</p>
+                                    <p className="text-3xl font-bold text-gray-900">{peerSelectionEnabledCount}</p>
+                                </div>
+                                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                    <Users className="w-6 h-6 text-green-600" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg hover:shadow-xl transition-all">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">Review Form Enabled</p>
+                                    <p className="text-3xl font-bold text-gray-900">{reviewEnabledCount}</p>
+                                </div>
+                                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                    <Users className="w-6 h-6 text-green-600" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="px-8 pb-8">
+                <Card className="bg-white/90 backdrop-blur-sm border-white/30 shadow-xl">
+                    <CardHeader className="border-b border-gray-200/50 bg-white/50">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
+                            <div>
+                                <h2 className="text-3xl font-poppins text-gray-900 font-semibold">Available Review Cycles</h2>
+                                <p className="text-gray-600 mt-1">Select a review cycle to participate in performance evaluations</p>
+                            </div>
+                        </div>
+                    </CardHeader>
+
+                    {/* Filter & Search */}
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 lg:gap-4 mb-8 p-6 bg-gray-50/50 border border-gray-200/50">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-x-3 gap-y-1.5">
+                            <div className="flex items-center gap-2">
+                                <div className="p-2 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <Users className="h-4 w-4 text-blue-600" />
+                                </div>
+                                <Label htmlFor="filter" className="whitespace-nowrap font-medium text-gray-700">Filter By Company:</Label>
+                            </div>
+                            <Select value={filter} onValueChange={setFilter}>
+                                <SelectTrigger className="min-w-[150px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {companies.map(name => (
+                                        <SelectItem key={name} value={name}>
+                                            {name === "all" ? "All Companies" : name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-x-3 gap-y-1.5">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                    <Search className="w-4 h-4 text-green-600" />
+                                </div>
+                                <Label htmlFor="search" className="font-medium text-gray-700">Search:</Label>
+                            </div>
+                            <Input
+                                id="search"
+                                placeholder="Search cycle name..."
+                                className="w-full lg:w-64"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+
+                    <CardContent className="max-sm:px-6 p-8">
+
+                        {/* Cycle Cards Grid */}
+                        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 2xl:grid-cols-3">
+                            {loading ? (
+                                <ReviewCycleSkeletons />
+                            ) : visibleCycles.length > 0 ? (
+                                visibleCycles.map((c) => (
+                                    <Card key={c.review_cycle_id} className="border border-gray-200 rounded-lg hover:shadow-lg transition-shadow">
+
+                                        <CardContent className="flex items-start space-x-3 py-4">
+                                            {c.companyLogo && (
+                                                <img
+                                                    src={c.companyLogo}
+                                                    alt={c.companyName}
+                                                    className="w-12 h-12 rounded-full object-cover"
+                                                />
+                                            )}
+                                            <div>
+                                                <div className="text-sm font-medium">{c.companyName}</div>
+                                                <div className="text-xs text-gray-500">{c.companyEmail}</div>
+                                                <div className="text-xs text-gray-500">{c.companyMobile}</div>
+                                                <div className="text-xs text-gray-500">{c.companyDescription}</div>
+                                            </div>
+                                        </CardContent>
+
+                                        <CardHeader className="flex justify-between items-start border-b border-gray-100 py-0 pb-3">
+                                            <h2 className="text-xl font-semibold text-gray-800">
+                                                {c.name}
+                                            </h2>
+                                            <div className="flex flex-wrap gap-2">
+                                                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${c.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                                                    {c.is_active ? "Active" : "Inactive"}
+                                                </span>
+                                                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${c.is_peer_selection_enabled ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-600"}`}>
+                                                    Peer Selection: {c.is_peer_selection_enabled ? "On" : "Off"}
+                                                </span>
+                                                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${c.is_review_enabled ? "bg-indigo-100 text-indigo-800" : "bg-gray-100 text-gray-600"}`}>
+                                                    Review Forms: {c.is_review_enabled ? "On" : "Off"}
+                                                </span>
+                                            </div>
+                                        </CardHeader>
+
+
+                                        <CardContent className="grid grid-cols-2 gap-4 text-sm text-gray-700 pt-2">
+                                            <div>
+                                                <strong>Start:</strong>
+                                                <div>{new Date(c.start_date).toLocaleString()}</div>
+                                            </div>
+                                            <div>
+                                                <strong>End:</strong>
+                                                <div>{new Date(c.end_date).toLocaleString()}</div>
+                                            </div>
+                                            <div>
+                                                <strong>Max Peers:</strong>
+                                                <div>{c.max_peer_selection}</div>
+                                            </div>
+                                            <div>
+                                                <strong>Max Reviews:</strong>
+                                                <div>{c.max_reviews_allowed}</div>
+                                            </div>
+                                            <div>
+                                                <strong>Created at:</strong>
+                                                <div>{new Date(c.created_at).toLocaleString()}</div>
+                                            </div>
+                                            <div>
+                                                <strong>Updated at:</strong>
+                                                <div>{new Date(c.updated_at).toLocaleString()}</div>
+                                            </div>
+                                        </CardContent>
+
+                                        <div className="p-4 pt-0 flex">
+                                            <Link href={`/employee/dashboard/${c.review_cycle_id}/`}>
+                                                <Button>Enter Review Cycle</Button>
+                                            </Link>
+                                        </div>
+                                    </Card>
+                                ))
+                            ) : (
+                                <p className="col-span-full text-center text-gray-500">
+                                    No Review Cycles Found
+                                </p>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

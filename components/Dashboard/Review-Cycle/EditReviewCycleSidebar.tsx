@@ -9,6 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
+import ButtonLoader from "@/components/Common/ButtonLoader";
 
 export type EditCycleValues = {
     label: string;
@@ -36,6 +37,8 @@ export default function EditReviewCycleSidebar({ initial, onCancel, onSubmit, }:
     const [peerEnabled, setPeerEnabled] = useState(initial.isPeerSelectionEnabled);
     const [reviewEnabled, setReviewEnabled] = useState(initial.isReviewEnabled);
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const disabledSave = !label.trim();
 
     useEffect(() => {
@@ -47,6 +50,25 @@ export default function EditReviewCycleSidebar({ initial, onCancel, onSubmit, }:
         setPeerEnabled(initial.isPeerSelectionEnabled);
         setReviewEnabled(initial.isReviewEnabled);
     }, [initial]);
+
+    function handleSave() {
+        setIsSubmitting(true);
+        try {
+            onSubmit({
+                label: label.trim(),
+                startDate,
+                endDate,
+                maxPeers,
+                requiredReviewers,
+                isPeerSelectionEnabled: peerEnabled,
+                isReviewEnabled: reviewEnabled,
+            })
+        }
+        catch {
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
 
     return (
         <DialogContent className="fixed right-0 top-0 h-full w-full max-w-md p-6 bg-white shadow-lg overflow-auto animate-in duration-300 slide-in-from-right-1/2">
@@ -153,20 +175,11 @@ export default function EditReviewCycleSidebar({ initial, onCancel, onSubmit, }:
                     Cancel
                 </Button>
                 <Button
-                    disabled={disabledSave}
-                    onClick={() =>
-                        onSubmit({
-                            label: label.trim(),
-                            startDate,
-                            endDate,
-                            maxPeers,
-                            requiredReviewers,
-                            isPeerSelectionEnabled: peerEnabled,
-                            isReviewEnabled: reviewEnabled,
-                        })
-                    }
+                    disabled={disabledSave || isSubmitting}
+                    onClick={handleSave}
+                    className="px-8"
                 >
-                    Save
+                    {isSubmitting ? <ButtonLoader /> : "Save"}
                 </Button>
             </DialogFooter>
         </DialogContent>

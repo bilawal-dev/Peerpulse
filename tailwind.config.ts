@@ -11,7 +11,7 @@ const config: Config = {
 		extend: {
 			fontFamily: {
 				poppins: ["var(--font-poppins)"],
-				pacifico: ["var(--font-pacifico)"],
+				brand: ["var(--font-mooxy)"],
 			},
 			
 			colors: {

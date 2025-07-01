@@ -11,7 +11,7 @@ export interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string, userType: "company" | "employee") => Promise<void>;
   logout: () => void;
-  registerCompany: (companyName: string, email: string, password: string) => Promise<void>;
+  registerCompany: (formData: FormData) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
 }
 
@@ -96,20 +96,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   // * SIGNUP (HANDLES COMPANY & EMPLOYEE)
-  const registerCompany = async (companyName: string, email: string, password: string) => {
+  const registerCompany = async (formData: FormData) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/register`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: companyName, email, password }),
-      }
-      );
+        body: formData, // No Content-Type header needed for FormData, browser will set it automatically
+      });
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data?.message || "Registration failed");
       }
 
+      const email = formData.get("email") as string;
       toast.success("Verification Email Sent");
       setTimeout(() => {
         router.push(`/verify-email-sent?email=${encodeURIComponent(email)}`);

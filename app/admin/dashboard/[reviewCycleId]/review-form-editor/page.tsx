@@ -453,7 +453,7 @@ export default function AdminDashboardReviewFormEditor() {
                             <div className="flex items-center gap-2">
                                 <AlertCircle className="w-4 h-4 text-amber-600" />
                                 <span className="text-sm text-amber-700 font-medium">
-                                    Review cycle is currently active. Question editing is disabled.
+                                    Peer review is currently active. Question editing is disabled.
                                 </span>
                             </div>
                         </div>

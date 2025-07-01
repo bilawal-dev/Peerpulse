@@ -15,7 +15,7 @@ const Hero = () => {
           Empower your team with smarter peer reviews
         </h1>
         <p className="text-center pt-6 text-[#36485C] lg:text-[18px] lg:leading-7">
-          Elevu simplifies 360-degree performance reviews by automating peer feedback,
+          PeerPulse simplifies 360-degree performance reviews by automating peer feedback,
           manager evaluations, and insightful performance reports — all in one seamless platform.
         </p>
 

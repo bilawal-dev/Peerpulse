@@ -14,7 +14,7 @@ const Footer = () => {
     <footer className="pt-[30px] pb-[40px]">
       <div className="flex items-center justify-center gap-x-[12px]">
         <Image src={logo} alt="Logo" />
-        <p className="font-bold text-[#36485C] text-[17px]">Elevu</p>
+        <p className="font-bold text-[#36485C] text-[17px]">PeerPulse</p>
       </div>
 
       <ul className="flex flex-row justify-center gap-x-5 pt-5 gap-y-[32px] text-[#36485C]  ">
@@ -31,7 +31,7 @@ const Footer = () => {
       </ul>
 
       <p className="pt-5 text-center text-[14px] font-medium text-[#5F7896] ">
-        © Copyright 2025 - Elevu | All rights reserved by - Elevu Inc.
+        © Copyright 2025 - PeerPulse | All rights reserved by - PeerPulse Inc.
       </p>
     </footer>
   );

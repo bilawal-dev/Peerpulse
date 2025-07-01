@@ -4,19 +4,19 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 const items = [
   {
-    question: "How does Elevu decide who reviews whom?",
+    question: "How does PeerPulse decide who reviews whom?",
     answer:
-      "Our algorithm matches reviewers based on reporting lines, past collaboration, and cycle rules you define. You can override pairings any time or let Elevu handle the entire matching process automatically.",
+      "Our algorithm matches reviewers based on reporting lines, past collaboration, and cycle rules you define. You can override pairings any time or let PeerPulse handle the entire matching process automatically.",
   },
   {
-    question: "Are peer reviews anonymous in Elevu?",
+    question: "Are peer reviews anonymous in PeerPulse?",
     answer:
       "Yes. By default, peer feedback is anonymous to encourage honest, constructive input. Admins can turn anonymity on or off per cycle if your culture prefers transparency.",
   },
   {
     question: "How are reminders sent to employees?",
     answer:
-      "Elevu delivers smart reminders via email and Slack. Nudges respect local time zones and stop automatically once reviewers submit, so no one feels spammed.",
+      "PeerPulse delivers smart reminders via email and Slack. Nudges respect local time zones and stop automatically once reviewers submit, so no one feels spammed.",
   },
   {
     question: "Can managers customize the review templates?",
@@ -24,9 +24,9 @@ const items = [
       "Absolutely. You can start with our role-based templates (engineering, sales, design, etc.) and edit questions or rating scales. Save them as presets for future cycles.",
   },
   {
-    question: "What integrations does Elevu support?",
+    question: "What integrations does PeerPulse support?",
     answer:
-      "Elevu connects with popular HRIS platforms, Slack, Microsoft Teams, and single-sign-on providers. Our Zapier app lets you automate workflows with 5,000+ additional tools.",
+      "PeerPulse connects with popular HRIS platforms, Slack, Microsoft Teams, and single-sign-on providers. Our Zapier app lets you automate workflows with 5,000+ additional tools.",
   },
 ];
 
@@ -39,7 +39,7 @@ export default function Faq() {
           Frequently Asked Questions
         </h3>
         <h1 className="py-4 text-2xl font-medium text-[#172026] lg:text-[42px] lg:leading-[58px]">
-          Everything you need to know about Elevu
+          Everything you need to know about PeerPulse
         </h1>
         <p className="text-[#36485C] pb-[24px]">
           From automated matching to insightful analytics, here are the answers

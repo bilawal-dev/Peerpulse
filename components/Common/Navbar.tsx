@@ -36,7 +36,7 @@ export default function Navbar() {
       <nav className="mx-auto max-w-8xl flex items-center justify-between px-[10px] sm:px-[20px] py-[16px]">
         <Link href="/" className="flex items-center gap-2">
           <Image src={logo} alt="Logo" />
-          <span className="font-medium text-[#36485C] text-lg">Elevu</span>
+          <span className="font-medium text-[#36485C] text-lg">PeerPulse</span>
         </Link>
 
         {/* Desktop Menu */}

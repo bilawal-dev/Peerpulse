@@ -26,7 +26,7 @@ const Features = () => {
             className="pt-[24px] sm:hidden"
           />
           <p className="py-[24px] text-[#36485C] lg:text-[18px]">
-            Elevu automatically selects review pairs, schedules cycles, and reminds
+            PeerPulse automatically selects review pairs, schedules cycles, and reminds
             employees by email or Slack, so HR teams spend less time chasing forms and
             more time coaching people.
           </p>

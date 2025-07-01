@@ -53,7 +53,7 @@ export default function EmployeesDashboardPage() {
                         </h1>
                     </div>
                     <p className="text-gray-700">
-                        Empower your growth with Elevu's streamlined peer review
+                        Empower your growth with PeerPulse&apos;s streamlined peer review
                         process. Follow the steps below to complete your reviews and
                         help your team thrive.
                     </p>

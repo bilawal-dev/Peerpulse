@@ -9,6 +9,11 @@ const config: Config = {
 	],
 	theme: {
 		extend: {
+			fontFamily: {
+				poppins: ["var(--font-poppins)"],
+				pacifico: ["var(--font-pacifico)"],
+			},
+			
 			colors: {
 				brand: {
 					DEFAULT: "#E63946",

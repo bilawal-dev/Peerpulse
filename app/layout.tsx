@@ -1,7 +1,7 @@
 import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 import type { Metadata } from "next";
-import { Poppins } from 'next/font/google'
+import { Pacifico, Poppins } from 'next/font/google'
 import { Toaster } from "react-hot-toast";
 import ClientLoader from "./ClientLoader";
 
@@ -11,15 +11,21 @@ const poppins = Poppins({
   variable: '--font-poppins',
 })
 
+const pacifico = Pacifico({
+  weight: "400",
+  subsets: ["latin"],
+  variable: '--font-pacifico',
+});
+
 export const metadata: Metadata = {
-  title: "Elevu - Peer-Powered Performance Reviews",
-  description: "Elevu helps teams streamline 360° peer reviews, employee feedback, and performance reporting—all in one smart, automated platform.",
+  title: "PeerPulse - Peer-Powered Performance Reviews",
+  description: "PeerPulse helps teams streamline 360° peer reviews, employee feedback, and performance reporting—all in one smart, automated platform.",
 };
 
 export default function RootLayout({ children, }: Readonly<{ children: React.ReactNode; }>) {
   return (
     <html lang="en">
-      <body className={`antialiased ${poppins.className}`} >
+      <body className={`antialiased ${poppins.className} ${pacifico.variable}`} >
         <Toaster />
         <AuthProvider>
           <ClientLoader>

@@ -41,7 +41,7 @@ export default function Sidebar({ collapsed, onToggle, navItems, }: SidebarProps
         <aside className={`fixed inset-y-0 left-0 max-h-screen bg-white border-r flex flex-col transition-[width] duration-200 ${collapsed ? "w-20" : "w-72"}`}>
             {/* Logo + toggle */}
             <div className="p-6 flex items-center justify-between text-brand text-3xl font-bold">
-                {collapsed ? "E" : "Elevu"}
+                {collapsed ? "P" : "PeerPulse"}
                 <button
                     onClick={onToggle}
                     className={`p-1 rounded ${collapsed ? "" : "hover:bg-gray-100"}`}

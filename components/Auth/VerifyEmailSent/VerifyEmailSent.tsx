@@ -16,7 +16,7 @@ export default function VerifyEmailSent({ email }: { email: string }) {
                 </h2>
 
                 <p className="text-gray-700 mb-6">
-                    We've sent a verification link to your inbox. Please check your email and click the link to activate your account.
+                    We&apos;ve sent a verification link to your inbox. Please check your email and click the link to activate your account.
                 </p>
 
                 <p className="text-gray-900 font-medium mb-8">

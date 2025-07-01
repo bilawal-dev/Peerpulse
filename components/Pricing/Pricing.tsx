@@ -5,7 +5,7 @@ import Link from "next/link";
 const plans = [
   {
     name: "Free Trial",
-    description: "Perfect for exploring Elevu's features",
+    description: "Perfect for exploring PeerPulse's features",
     price: "0$/mo",
     bgColor: "bg-slate-100",
     textColor: "text-black",

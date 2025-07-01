@@ -95,7 +95,7 @@ export default function ContactForm() {
                         We usually respond within 24 hours. Whether you&apos;re a potential
                         client or curious about a feature, we&apos;re here to chat.
                     </p>
-                    <p className="text-sm font-medium text-[#0C0C0F]">support@peerpulse.com</p>
+                    <p className="text-sm font-medium text-[#0C0C0F]">tools@addex.solutions</p>
                 </div>
 
                 {/* Right Side: Form */}

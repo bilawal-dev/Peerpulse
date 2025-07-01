@@ -4,10 +4,9 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-
-import logo from "@/public/assets/Logo.png";
 import userPlaceholderImg from "@/public/assets/User.svg";
-import menu from "@/public/assets/Menu.svg";
+import menu from "@/public/assets/Menu.svg"
+
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -33,10 +32,9 @@ export default function Navbar() {
 
   return (
     <header className="fixed w-full bg-white z-50">
-      <nav className="mx-auto max-w-8xl flex items-center justify-between px-[10px] sm:px-[20px] py-[16px]">
-        <Link href="/" className="flex items-center gap-2">
-          <Image src={logo} alt="Logo" />
-          <span className="font-medium text-[#36485C] text-lg">PeerPulse</span>
+      <nav className="lg:container lg:px-[20px] lg:mx-auto flex items-center justify-between px-[10px] sm:px-[20px] py-[16px]">
+        <Link href="/" className="flex items-center">
+          <span className="font-pacifico text-brand text-3xl">PeerPulse</span>
         </Link>
 
         {/* Desktop Menu */}
@@ -55,7 +53,7 @@ export default function Navbar() {
         {/* Desktop Links (Account and Login OR Dashboard) */}
         <div className="flex items-center gap-5 sm:gap-10">
           {user ? (
-            // If user is logged in, show “Dashboard” link
+            // If user is logged in, show "Dashboard" link
             <Link href={dashboardHref} className="items-center gap-x-3 text-[#36485C] font-medium hidden lg:flex">
               <Image alt="user" src={userPlaceholderImg} width={20} height={20} />
               <span>
@@ -63,7 +61,7 @@ export default function Navbar() {
               </span>
             </Link>
           ) : (
-            // Otherwise, show “Open an Account” and “Log In”
+            // Otherwise, show "Open an Account" and "Log In"
             <>
               <Link
                 href="/register"
@@ -106,7 +104,7 @@ export default function Navbar() {
                 </span>
               </Link>
             ) : (
-              // If not logged in: show “Open an Account” and “Log In”
+              // If not logged in: show "Open an Account" and "Log In"
               <>
                 <Link href="/register" className="text-[#36485C] font-medium py-4" onClick={closeMenu}>
                   Open an Account

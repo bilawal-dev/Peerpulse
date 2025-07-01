@@ -4,31 +4,37 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 const items = [
   {
-    question: "How does PeerPulse decide who reviews whom?",
+    question: "How does PeerPulse assign which peers review whom?",
     answer:
-      "Our algorithm matches reviewers based on reporting lines, past collaboration, and cycle rules you define. You can override pairings any time or let PeerPulse handle the entire matching process automatically.",
+      "Our algorithm does automatic pairing of peers to be reviewed by an employee based on your peer-selection of the peers they work closely or know best to give review. HR may tweak pairs and do manual pairing adjustments. It Is best to combine both automatic pairing and manual paring adjustments by hr for best results.",
   },
   {
-    question: "Are peer reviews anonymous in PeerPulse?",
+    question: "Can HR customise the review questionnaire?",
     answer:
-      "Yes. By default, peer feedback is anonymous to encourage honest, constructive input. Admins can turn anonymity on or off per cycle if your culture prefers transparency.",
+      "Yes. HR can edit the questionnaire, add or sort questions, insert dynamic fields, and lock the form once the reivew process starts.",
   },
   {
-    question: "How are reminders sent to employees?",
+    question: "How does credit-based pricing work?",
     answer:
-      "PeerPulse delivers smart reminders via email and Slack. Nudges respect local time zones and stop automatically once reviewers submit, so no one feels spammed.",
+      "Companies buy credits per employee — say $10 each employee. After payment they can invite-employees to thier review cycle, do peer-selection, send reminders, fill review forms and then access the performance reports without any extra cost.",
   },
   {
-    question: "Can managers customize the review templates?",
+    question: "Is company data isolated and secure?",
     answer:
-      "Absolutely. You can start with our role-based templates (engineering, sales, design, etc.) and edit questions or rating scales. Save them as presets for future cycles.",
+      "Company data sits in its own tenancy so records stay private. At review cycle end the company as well as managers get a compiled report and access alerts by email.",
   },
   {
-    question: "What integrations does PeerPulse support?",
+    question: "How are reminders delivered during a cycle?",
     answer:
-      "PeerPulse connects with popular HRIS platforms, Slack, Microsoft Teams, and single-sign-on providers. Our Zapier app lets you automate workflows with 5,000+ additional tools.",
+      "Emails fire on the schedule HR sets: peer-selection and reivew-form-filling nudges, first and second prompts, and final warnings.",
+  },
+  {
+    question: "Can we run several review cycles at once?",
+    answer:
+      "Yes. Finish one cycle or leave it archived, then launch another. Past data stays intact and the new round collects feedback.",
   },
 ];
+
 
 export default function Faq() {
   return (

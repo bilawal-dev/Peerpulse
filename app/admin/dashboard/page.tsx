@@ -310,7 +310,7 @@ export default function AdminDashboardRootPage() {
             <div className="px-8 pb-8">
                 <Card className="bg-white/90 backdrop-blur-sm border-white/30 shadow-xl">
                     <CardHeader className="border-b border-gray-200/50 bg-white/50">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
+                        <div className="flex flex-col 2xl:flex-row items-start justify-between space-y-4 2xl:space-y-0">
                             <div>
                                 <h2 className="text-3xl font-poppins text-gray-900 font-semibold">Review Cycles</h2>
                                 <p className="text-gray-600 mt-1">Create and manage 360° performance review cycles to handle employee management, design questionnaires, set up email notifications, and access compiled analytics</p>

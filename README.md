@@ -1,21 +1,10 @@
-# 🚀 Elevu - Performance Review Management System
+# Elevu - Performance Review Management System
 
 <div align="center">
   <img src="public/assets/Logo.png" alt="Elevu Logo" width="200"/>
   
   <p align="center">
     <strong>A comprehensive performance review management platform</strong>
-  </p>
-  
-  <p align="center">
-    Built with Next.js, TypeScript, and Tailwind CSS
-  </p>
-
-  <p align="center">
-    <img src="https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js" alt="Next.js"/>
-    <img src="https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript" alt="TypeScript"/>
-    <img src="https://img.shields.io/badge/Tailwind_CSS-3-38B2AC?style=for-the-badge&logo=tailwind-css" alt="Tailwind CSS"/>
-    <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react" alt="React"/>
   </p>
 </div>
 
@@ -26,13 +15,7 @@
 - [Overview](#-overview)
 - [Features](#-features)
 - [Tech Stack](#-tech-stack)
-- [Getting Started](#-getting-started)
-- [Project Structure](#-project-structure)
 - [User Roles](#-user-roles)
-- [API Integration](#-api-integration)
-- [Development](#-development)
-- [Deployment](#-deployment)
-- [Contributing](#-contributing)
 
 ---
 

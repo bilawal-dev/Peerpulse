@@ -61,13 +61,13 @@ export default function Navbar() {
               </span>
             </Link>
           ) : (
-            // Otherwise, show "Open an Account" and "Log In"
+            // Otherwise, show "Register Company" and "Log In"
             <>
               <Link
                 href="/register"
                 className="text-[#36485C] font-medium hidden lg:block cursor-pointer"
               >
-                Open an Account
+                Register Company
               </Link>
               <Link href="/login" className="flex items-center gap-x-3">
                 <Image alt="user" src={userPlaceholderImg} width={20} height={20} />
@@ -104,10 +104,10 @@ export default function Navbar() {
                 </span>
               </Link>
             ) : (
-              // If not logged in: show "Open an Account" and "Log In"
+              // If not logged in: show "Register Company" and "Log In"
               <>
                 <Link href="/register" className="text-[#36485C] font-medium py-4" onClick={closeMenu}>
-                  Open an Account
+                  Register Company
                 </Link>
                 <Link href="/login" className="flex items-center gap-x-3 py-4" onClick={closeMenu}>
                   <Image alt="user" src={userPlaceholderImg} width={20} height={20} />

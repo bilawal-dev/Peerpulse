@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import toast from "react-hot-toast";
 import { Eye, EyeOff } from "lucide-react";
 import ButtonLoader from "@/components/Common/ButtonLoader";
 import { useAuth } from "@/context/AuthContext";

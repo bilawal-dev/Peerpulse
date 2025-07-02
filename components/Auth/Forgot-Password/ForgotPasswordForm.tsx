@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function ForgotPasswordForm() {
     const [email, setEmail] = useState("");
+    const [userType, setUserType] = useState<"company" | "employee">("employee");
     const [isSending, setIsSending] = useState(false);
 
 
@@ -15,7 +16,7 @@ export default function ForgotPasswordForm() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSending(true);
-        await forgotPassword(email);
+        await forgotPassword(email, userType);
         setEmail("");
         setIsSending(false);
     };
@@ -43,6 +44,33 @@ export default function ForgotPasswordForm() {
                             required
                             className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:border-brand transition"
                         />
+                    </div>
+
+                    {/* User Type Selection */}
+                    <div className="mb-8">
+                        <label className="block text-gray-700 mb-2">Account Type:</label>
+                        <div className="grid grid-cols-2 bg-sky-50 rounded-full overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => setUserType("employee")}
+                                className={`py-2 text-center font-medium ${userType === "employee"
+                                    ? "bg-brand text-white"
+                                    : "text-brand hover:bg-sky-100"
+                                    }`}
+                            >
+                                Employee
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setUserType("company")}
+                                className={`py-2 text-center font-medium ${userType === "company"
+                                    ? "bg-brand text-white"
+                                    : "text-brand hover:bg-sky-100"
+                                    }`}
+                            >
+                                Company
+                            </button>
+                        </div>
                     </div>
 
                     {/* Send Reset Link */}

@@ -3,15 +3,14 @@
 import { useState, useRef } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Upload, X } from "lucide-react";
 import ButtonLoader from "@/components/Common/ButtonLoader";
 import { useAuth } from "@/context/AuthContext";
 
 export default function RegisterForm() {
-    const [formData, setFormData] = useState({ 
-        companyName: "", 
-        email: "", 
+    const [formData, setFormData] = useState({
+        companyName: "",
+        email: "",
         password: "",
         description: "",
         mobileNumber: ""
@@ -21,7 +20,6 @@ export default function RegisterForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const router = useRouter();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -80,9 +78,15 @@ export default function RegisterForm() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        
+
         const { companyName, email, password, description, mobileNumber } = formData;
-        
+
+        if (!companyName || !email || !password || !description || !selectedFile) {
+            toast.error("Please fill all the required fields");
+            setIsLoading(false);
+            return;
+        }
+
         // Create FormData for multipart/form-data
         const formDataToSend = new FormData();
         formDataToSend.append('name', companyName);
@@ -95,7 +99,7 @@ export default function RegisterForm() {
         if (selectedFile) {
             formDataToSend.append('file', selectedFile);
         }
-        
+
         await registerCompany(formDataToSend);
         setFormData({ companyName: "", email: "", password: "", description: "", mobileNumber: "" });
         setSelectedFile(null);
@@ -208,11 +212,10 @@ export default function RegisterForm() {
                             Company Logo (PNG only)
                         </label>
                         <div
-                            className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                                dragActive
-                                    ? "border-brand bg-brand/5"
-                                    : "border-gray-300 hover:border-gray-400"
-                            }`}
+                            className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${dragActive
+                                ? "border-brand bg-brand/5"
+                                : "border-gray-300 hover:border-gray-400"
+                                }`}
                             onDragEnter={handleDrag}
                             onDragLeave={handleDrag}
                             onDragOver={handleDrag}
@@ -224,10 +227,11 @@ export default function RegisterForm() {
                                     type="file"
                                     accept=".png,image/png"
                                     onChange={handleFileSelect}
+                                    required
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                 />
                             )}
-                            
+
                             {selectedFile ? (
                                 <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
                                     <div className="flex items-center space-x-3">
@@ -239,7 +243,7 @@ export default function RegisterForm() {
                                                 {selectedFile.name}
                                             </p>
                                             <p className="text-xs text-gray-500">
-                                                {selectedFile.size > 1024 * 1024 
+                                                {selectedFile.size > 1024 * 1024
                                                     ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
                                                     : `${(selectedFile.size / 1024).toFixed(1)} KB`
                                                 }

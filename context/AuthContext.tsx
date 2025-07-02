@@ -12,7 +12,8 @@ export interface AuthContextType {
   login: (email: string, password: string, userType: "company" | "employee") => Promise<void>;
   logout: () => void;
   registerCompany: (formData: FormData) => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
+  forgotPassword: (email: string, userType: "company" | "employee") => Promise<void>;
+  resetPassword: (token: string, newPassword: string, userType: "company" | "employee") => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -77,7 +78,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       const data = await response.json();
 
-      if (!response.ok) {
+      if (!data.success) {
         throw new Error(data?.message || "Login failed");
       }
 
@@ -104,7 +105,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       const data = await response.json();
 
-      if (!response.ok) {
+      if (!data.success) {
         throw new Error(data?.message || "Registration failed");
       }
 
@@ -127,10 +128,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     router.push("/login");
   };
 
-  // * FORGOT-PASSWORD (HANDLES COMPANY FORGOT-PASSWORD)
-  const forgotPassword = async (email: string) => {
+  // * FORGOT-PASSWORD (HANDLES COMPANY & EMPLOYEE FORGOT-PASSWORD)
+  const forgotPassword = async (email: string, userType: "company" | "employee") => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/forgot-password`, {
+      const endpoint = userType === "company" ? "/company/forgot-password" : "/employee/forgot-password";
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -138,7 +141,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       );
       const data = await response.json();
 
-      if (!response.ok) {
+      if (!data.success) {
         throw new Error(data?.message || "Failed to send reset link");
       }
 
@@ -152,8 +155,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // * RESET-PASSWORD (HANDLES COMPANY & EMPLOYEE RESET-PASSWORD)
+  const resetPassword = async (token: string, newPassword: string, userType: "company" | "employee") => {
+    try {
+      const endpoint = userType === "company" ? "/company/reset-password" : "/employee/reset-password";
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, newPassword }),
+      });
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data?.message || "Failed to reset password");
+      }
+
+      toast.success("Password reset successfully!");
+      setTimeout(() => {
+        router.replace("/login");
+      }, 1000);
+    } catch (err: any) {
+      console.error("ResetPassword error:", err);
+      toast.error(err.message || "Something went wrong");
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, registerCompany, forgotPassword, }}    >
+    <AuthContext.Provider value={{ user, loading, login, logout, registerCompany, forgotPassword, resetPassword }}    >
       {children}
     </AuthContext.Provider>
   );

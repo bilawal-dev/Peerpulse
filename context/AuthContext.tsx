@@ -14,6 +14,7 @@ export interface AuthContextType {
   registerCompany: (formData: FormData) => Promise<void>;
   forgotPassword: (email: string, userType: "company" | "employee") => Promise<void>;
   resetPassword: (token: string, newPassword: string, userType: "company" | "employee") => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string, userType: "company" | "employee") => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -181,8 +182,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // * CHANGE-PASSWORD (HANDLES COMPANY & EMPLOYEE CHANGE-PASSWORD)
+  const changePassword = async (currentPassword: string, newPassword: string, userType: "company" | "employee") => {
+    try {
+      const endpoint = userType === "company" ? "/company/change-password" : "/employee/change-password";
+      const token = localStorage.getItem("elevu_auth");
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}${endpoint}`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+      });
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data?.message || "Failed to change password");
+      }
+
+      toast.success("Password changed successfully! Logging out...");
+      
+      // Log out user for security after password change
+      setTimeout(() => {
+        localStorage.removeItem("elevu_auth");
+        setUser(null);
+        window.location.href = "/login";
+      }, 500);
+    } catch (err: any) {
+      console.error("ChangePassword error:", err);
+      toast.error(err.message || "Something went wrong");
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, registerCompany, forgotPassword, resetPassword }}    >
+    <AuthContext.Provider value={{ user, loading, login, logout, registerCompany, forgotPassword, resetPassword, changePassword }}    >
       {children}
     </AuthContext.Provider>
   );

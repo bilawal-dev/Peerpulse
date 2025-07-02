@@ -11,7 +11,9 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue, } from "@/components/ui/select";
-import { Home, LogOut, User, Calendar, Users, BarChart3, Search } from "lucide-react";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, } from "@/components/ui/dialog";
+import { Home, LogOut, User, Calendar, Users, BarChart3, Search, Key, Eye, EyeOff } from "lucide-react";
+import ButtonLoader from "@/components/Common/ButtonLoader";
 import { useAuth } from "@/context/AuthContext";
 
 interface ReviewCycle {
@@ -34,7 +36,7 @@ interface ReviewCycle {
 }
 
 export default function EmployeeDashboardRootPage() {
-    const { user, logout } = useAuth();
+    const { user, logout, changePassword } = useAuth();
     const [cycles, setCycles] = useState<ReviewCycle[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -42,6 +44,19 @@ export default function EmployeeDashboardRootPage() {
     // New: search & filter state
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState<string>("all");
+
+    // change password dialog
+    const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+    const [passwordFormData, setPasswordFormData] = useState({
+        currentPassword: "",
+        newPassword: "",
+        confirmNewPassword: ""
+    });
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [passwordError, setPasswordError] = useState("");
+    const [changingPassword, setChangingPassword] = useState(false);
 
     useEffect(() => {
         (async () => {
@@ -86,6 +101,48 @@ export default function EmployeeDashboardRootPage() {
             }
         })();
     }, []);
+
+    // change password
+    function openChangePassword() {
+        setChangePasswordOpen(true);
+        setPasswordFormData({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
+        setPasswordError("");
+    }
+
+    const handlePasswordFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setPasswordFormData(prev => ({ ...prev, [name]: value }));
+        
+        // Clear error when user starts typing
+        if (passwordError) {
+            setPasswordError("");
+        }
+    };
+
+    async function handleChangePassword() {
+        // Validate passwords match
+        if (passwordFormData.newPassword !== passwordFormData.confirmNewPassword) {
+            setPasswordError("New passwords do not match");
+            return;
+        }
+
+        // Validate password length
+        if (passwordFormData.newPassword.length < 8) {
+            setPasswordError("New password must be at least 8 characters long");
+            return;
+        }
+
+        setChangingPassword(true);
+        try {
+            await changePassword(passwordFormData.currentPassword, passwordFormData.newPassword, "employee");
+            setChangePasswordOpen(false);
+            setPasswordFormData({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
+        } catch (error) {
+            // Error is already handled in AuthContext
+        } finally {
+            setChangingPassword(false);
+        }
+    }
 
     const companies = useMemo(() => {
         const names = cycles.map(c => c.companyName);
@@ -145,10 +202,16 @@ export default function EmployeeDashboardRootPage() {
                                             <p className="text-xs text-gray-600 truncate">{user?.email}</p>
                                             <p className="text-xs text-blue-600 font-medium capitalize mt-1">{user?.role}</p>
                                         </div>
-                                        <button onClick={() => logout()} className="flex items-center gap-2 w-full py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                                            <LogOut className="w-4 h-4" />
-                                            Sign Out
-                                        </button>
+                                        <div className="space-y-1">
+                                            <button onClick={openChangePassword} className="flex items-center gap-2 w-full py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                                                <Key className="w-4 h-4" />
+                                                Reset Password
+                                            </button>
+                                            <button onClick={() => logout()} className="flex items-center gap-2 w-full py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                                                <LogOut className="w-4 h-4" />
+                                                Sign Out
+                                            </button>
+                                        </div>
                                     </PopoverContent>
                                 </Popover>
                             </div>
@@ -374,6 +437,125 @@ export default function EmployeeDashboardRootPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Change Password */}
+            <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
+                <DialogTrigger asChild><div hidden /></DialogTrigger>
+                <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Key className="w-5 h-5" />
+                            Change Password
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    {/* Info Notice */}
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-start gap-2">
+                            <LogOut className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <p className="text-blue-800 text-sm">
+                                <strong>Note:</strong> Changing your password will automatically log you out for security purposes. You'll need to sign in again with your new password.
+                            </p>
+                        </div>
+                    </div>
+
+                    <form onSubmit={(e) => { e.preventDefault(); handleChangePassword(); }} className="space-y-4 mt-4">
+                        {/* Current Password */}
+                        <div className="relative">
+                            <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                                Current Password
+                            </label>
+                            <input
+                                id="currentPassword"
+                                name="currentPassword"
+                                type={showCurrentPassword ? "text" : "password"}
+                                value={passwordFormData.currentPassword}
+                                onChange={handlePasswordFormChange}
+                                required
+                                className="w-full pr-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowCurrentPassword(v => !v)}
+                                className="absolute right-3 top-1/2 translate-y-1 text-gray-400 hover:text-gray-600"
+                            >
+                                {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
+
+                        {/* New Password */}
+                        <div className="relative">
+                            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                                New Password
+                            </label>
+                            <input
+                                id="newPassword"
+                                name="newPassword"
+                                type={showNewPassword ? "text" : "password"}
+                                value={passwordFormData.newPassword}
+                                onChange={handlePasswordFormChange}
+                                required
+                                className="w-full pr-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowNewPassword(v => !v)}
+                                className="absolute right-3 top-1/2 translate-y-1 text-gray-400 hover:text-gray-600"
+                            >
+                                {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
+
+                        {/* Confirm New Password */}
+                        <div className="relative">
+                            <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                                Confirm New Password
+                            </label>
+                            <input
+                                id="confirmNewPassword"
+                                name="confirmNewPassword"
+                                type={showConfirmPassword ? "text" : "password"}
+                                value={passwordFormData.confirmNewPassword}
+                                onChange={handlePasswordFormChange}
+                                required
+                                className="w-full pr-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(v => !v)}
+                                className="absolute right-3 top-1/2 translate-y-1 text-gray-400 hover:text-gray-600"
+                            >
+                                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
+
+                        {/* Error Message */}
+                        {passwordError && (
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="text-red-600 text-sm">{passwordError}</p>
+                            </div>
+                        )}
+
+                        <DialogFooter className="mt-6 flex justify-end space-x-2">
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={() => setChangePasswordOpen(false)}
+                                disabled={changingPassword}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={changingPassword}
+                                className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50"
+                            >
+                                {changingPassword ? <ButtonLoader /> : "Change Password"}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

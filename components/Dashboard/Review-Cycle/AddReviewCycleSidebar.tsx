@@ -11,6 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { format } from "date-fns";
 import ButtonLoader from "@/components/Common/ButtonLoader";
+import toast from "react-hot-toast";
 
 export type NewCycleValues = {
     label: string;
@@ -38,6 +39,24 @@ export default function AddReviewCycleSidebar({ onCancel, onSubmit }: Props) {
 
     async function handleSubmit() {
         setIsSubmitting(true);
+
+        if(!maxPeers) {
+            toast.error("Max Peers must be greater than 0");
+            setIsSubmitting(false);
+            return;
+        }
+
+        if(!requiredReviewers) {
+            toast.error("Required Reviewers must be greater than 0");
+            setIsSubmitting(false);
+            return;
+        }
+
+        if( !label.trim() || !startDate || !endDate ) {
+            toast.error("Please fill in all fields");
+            setIsSubmitting(false);
+            return;
+        }
 
         try {
             const isSuccess = await onSubmit({ label: label.trim(), startDate, endDate, maxPeers, requiredReviewers });
@@ -118,6 +137,8 @@ export default function AddReviewCycleSidebar({ onCancel, onSubmit }: Props) {
                         id="max-peers"
                         type="number"
                         value={maxPeers ?? ""}
+                        min={1}
+                        required
                         onChange={e =>
                             setMaxPeers(e.target.value ? Number(e.target.value) : undefined)
                         }
@@ -131,6 +152,8 @@ export default function AddReviewCycleSidebar({ onCancel, onSubmit }: Props) {
                         id="req-reviewers"
                         type="number"
                         value={requiredReviewers ?? ""}
+                        min={1}
+                        required
                         onChange={e =>
                             setRequiredReviewers(e.target.value ? Number(e.target.value) : undefined)
                         }

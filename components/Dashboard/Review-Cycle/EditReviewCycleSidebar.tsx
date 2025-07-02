@@ -163,12 +163,12 @@ export default function EditReviewCycleSidebar({ initial, onCancel, onSubmit, }:
                 </div>
 
                 <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <Label>Peer Review</Label>
-                        <Switch
-                            checked={reviewEnabled}
-                            onCheckedChange={(v) => setReviewEnabled(v)}
-                        />
+                <div className="flex items-center justify-between">
+                    <Label>Peer Review</Label>
+                    <Switch
+                        checked={reviewEnabled}
+                        onCheckedChange={(v) => setReviewEnabled(v)}
+                    />
                     </div>
                     
                     {reviewEnabled && (

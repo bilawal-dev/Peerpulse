@@ -80,8 +80,10 @@ export default function NotificationSection() {
                     },
                     body: JSON.stringify({ review_cycle_id: Number(reviewCycleId) }),
                 });
-                if (!res.ok) throw new Error("Failed to fetch cycle");
+
                 const json = await res.json() as { success: boolean; data: ReviewCycle; message: string };
+                if (!json.success) throw new Error(json.message || "Failed to fetch cycle");
+
                 const d = json.data;
                 setCycleDetails({
                     id: d.review_cycle_id,
@@ -107,8 +109,11 @@ export default function NotificationSection() {
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ review_cycle_id: reviewCycleId }),
             });
-            if (!res.ok) throw new Error("Failed to fetch reminders");
-            const json = await res.json();
+            const json = await res.json() as { success: boolean; data: ReminderData[]; message: string };
+            if (!json.success) throw new Error(json.message || "Failed to fetch reminders");
+
+            console.log('NOTIFICATIONs DATA', json);
+
             const data: ReminderData[] = json.data;
 
             const newDates: typeof dates = {
@@ -167,7 +172,8 @@ export default function NotificationSection() {
                         reminder_type: section,
                     }),
                 });
-                if (!res.ok) throw new Error("Failed to update reminder");
+                const json = await res.json() as { success: boolean; message: string };
+                if (!json.success) throw new Error(json.message || "Failed to update reminder");
                 toast.success(`${section} • ${field} updated`);
             } catch (err: any) {
                 console.error(err);
@@ -257,10 +263,13 @@ export default function NotificationSection() {
                             {section.reminders.map(rem => {
                                 const idx = section.reminders.findIndex(r => r.key === rem.key);
                                 const prevKey = idx > 0 ? section.reminders[idx - 1].key as DateField : null;
+                                const nextKey = idx < section.reminders.length - 1 ? section.reminders[idx + 1].key as DateField : null;
 
                                 let minBound: string | undefined;
+                                let maxBound: string | undefined;
                                 const now = new Date();
 
+                                // Min bound logic (existing)
                                 if (rem.key === "initial") {
                                     if (cycleDetails?.startDate) {
                                         const cs = new Date(cycleDetails.startDate);
@@ -275,6 +284,20 @@ export default function NotificationSection() {
                                     minBound = formatForInput((pd > now ? pd : now).toISOString());
                                 }
 
+                                // Max bound logic (new) - constrain by next reminder date
+                                if (nextKey && dates[section.key][nextKey]) {
+                                    const nextDate = new Date(dates[section.key][nextKey]);
+                                    const cycleEndDate = cycleDetails?.endDate ? new Date(cycleDetails.endDate) : null;
+                                    
+                                    if (cycleEndDate) {
+                                        maxBound = formatForInput((nextDate < cycleEndDate ? nextDate : cycleEndDate).toISOString());
+                                    } else {
+                                        maxBound = formatForInput(nextDate.toISOString());
+                                    }
+                                } else if (cycleDetails?.endDate) {
+                                    maxBound = formatForInput(cycleDetails.endDate);
+                                }
+
                                 return (
                                     <div key={rem.key}>
                                         <Label htmlFor={`${section.key}-${rem.key}`}>{rem.label}</Label>
@@ -286,7 +309,7 @@ export default function NotificationSection() {
                                                 value={dates[section.key][rem.key]}
                                                 onChange={e => handleDateChange(section.key, rem.key, e.target.value)}
                                                 min={minBound}
-                                                max={cycleDetails?.endDate ? formatForInput(cycleDetails.endDate) : undefined}
+                                                max={maxBound}
                                                 className="flex-1 !block justify-between"
                                             />
                                         </div>

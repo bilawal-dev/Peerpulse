@@ -12,9 +12,14 @@ import EditReviewCycleSidebar, { EditCycleValues } from "@/components/Dashboard/
 import toast from "react-hot-toast";
 import ButtonLoader from "@/components/Common/ButtonLoader";
 import { ReviewCycle } from "@/types/ReviewCycle";
+import { useParams, useRouter } from "next/navigation";
 
 
 export default function DashboardReviewCyclePage() {
+
+    const router = useRouter();
+    const { reviewCycleId } = useParams();
+    
     const [cycles, setCycles] = useState<ReviewCycle[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -171,6 +176,9 @@ export default function DashboardReviewCyclePage() {
             }
             setCycles(cycles => cycles.filter(cycle => cycle.review_cycle_id !== targetDeleteId));
             toast.success("Cycle deleted");
+            if(targetDeleteId === Number(reviewCycleId)) {
+                router.push('/admin/dashboard');
+            }
         } catch (error: any) {
             console.error("Error deleting cycle:", error);
             toast.error(error.message || "Failed to delete cycle");

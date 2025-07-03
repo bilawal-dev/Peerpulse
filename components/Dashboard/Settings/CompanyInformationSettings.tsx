@@ -11,7 +11,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, ImageIcon, X } from "lucide-react";
+import { UploadCloud, X } from "lucide-react";
 import ButtonLoader from "@/components/Common/ButtonLoader";
 import toast from "react-hot-toast";
 
@@ -210,7 +210,6 @@ export function CompanyInformationSettings() {
         <Card>
             <CardHeader>
                 <div className="flex items-center space-x-2">
-                    <ImageIcon className="h-5 w-5 text-gray-600" />
                     <CardTitle>Company Information</CardTitle>
                 </div>
                 <CardDescription>

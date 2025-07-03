@@ -91,8 +91,8 @@ export default function DashboardPairingPage() {
                     },
                     body: JSON.stringify({ review_cycle_id: Number(selectedCycle) }),
                 })
-                if (!res.ok) throw new Error("Failed to fetch employees for review")
                 const json = await res.json()
+                if (!json.success) throw new Error(json.message || "Failed to fetch employees for review")
                 const mappedEmps: Employee[] = (json.data as any[]).map((item) => {
                     return {
                         code: String(item.employee_id),
@@ -133,8 +133,8 @@ export default function DashboardPairingPage() {
                     employee_id: Number(empCode),
                 }),
             })
-            if (!res.ok) throw new Error("Failed to fetch review assignments")
             const json = await res.json()
+            if (!json.success) throw new Error(json.message || "Failed to fetch review assignments")
             const { review_by, will_review } = json.data
 
             const suggested = review_by.map((o: any) => ({
@@ -174,8 +174,8 @@ export default function DashboardPairingPage() {
                     employee_id: Number(empCode),
                 }),
             })
-            if (!res.ok) throw new Error("Failed to fetch peer selections")
             const json = await res.json()
+            if (!json.success) throw new Error(json.message || "Failed to fetch peer selections")
             const { i_selected, i_selected_by_others } = json.data
 
             const selectedCodes = i_selected.map((o: any) => String(o.peer.employee_id))

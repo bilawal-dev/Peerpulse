@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Mail, Settings, FileText, RefreshCcw, Link2, Calendar, FileEdit } from "lucide-react";
+import { LayoutDashboard, Users, Mail, Settings, FileText, RefreshCcw, Link2, Calendar, FileEdit, CreditCard } from "lucide-react";
 
 
 export function getAdminNavItems(prefix: string) {
@@ -11,6 +11,7 @@ export function getAdminNavItems(prefix: string) {
         { href: `${prefix}/notifications`, label: "Email Notifications", target: "_self", Icon: Mail },
         { href: `${prefix}/pairing`, label: "Manual Pairing", target: "_self", Icon: Link2 },
         { href: `${prefix}/review-cycle`, label: "Review Cycles Settings", target: "_self", Icon: RefreshCcw },
+        { href: `${prefix}/payments`, label: "Payment Records", target: "_self", Icon: CreditCard },
         { href: `${prefix}/settings`, label: "Settings", target: "_self", Icon: Settings },
     ];
 }

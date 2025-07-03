@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Clock, AlertTriangle, RefreshCw, ArrowLeft, CreditCard } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type SearchParams = {
     session_id: string | undefined;
@@ -34,9 +34,11 @@ interface PaymentStatusData {
     };
 }
 
-export default function StripePaymentStatusPage({ searchParams }: { searchParams: SearchParams }) {
+export default function StripePaymentStatusPage() {
     const router = useRouter();
-    const { session_id, review_cycle_id } = searchParams;
+    const searchParams = useSearchParams();
+    const session_id = searchParams.get('session_id');
+    const review_cycle_id = searchParams.get('review_cycle_id');
     
     const [paymentData, setPaymentData] = useState<PaymentStatusData | null>(null);
     const [isLoading, setIsLoading] = useState(true);

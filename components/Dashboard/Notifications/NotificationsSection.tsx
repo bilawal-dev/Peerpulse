@@ -212,7 +212,6 @@ export default function NotificationSection() {
                     });
                 }
             }
-            toast.success("All reminders created");
             // 3) Refresh the same cycle's data
             await loadReminders(Number(reviewCycleId));
         } catch (err: any) {
@@ -288,7 +287,7 @@ export default function NotificationSection() {
                                 if (nextKey && dates[section.key][nextKey]) {
                                     const nextDate = new Date(dates[section.key][nextKey]);
                                     const cycleEndDate = cycleDetails?.endDate ? new Date(cycleDetails.endDate) : null;
-                                    
+
                                     if (cycleEndDate) {
                                         maxBound = formatForInput((nextDate < cycleEndDate ? nextDate : cycleEndDate).toISOString());
                                     } else {

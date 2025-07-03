@@ -19,7 +19,7 @@ export default function DashboardReviewCyclePage() {
 
     const router = useRouter();
     const { reviewCycleId } = useParams();
-    
+
     const [cycles, setCycles] = useState<ReviewCycle[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -69,7 +69,7 @@ export default function DashboardReviewCyclePage() {
     async function handleAdd(vals: NewCycleValues) {
         try {
             toast.loading("Creating review cycle...", { id: "create-cycle" });
-            
+
             const token = localStorage.getItem("elevu_auth");
             const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/add-review-cycle`, {
                 method: "POST",
@@ -116,7 +116,7 @@ export default function DashboardReviewCyclePage() {
     async function handleEdit(vals: EditCycleValues) {
         try {
             toast.loading("Updating review cycle...", { id: "update-cycle" });
-            
+
             const token = localStorage.getItem("elevu_auth");
 
             // 1) core update
@@ -140,6 +140,9 @@ export default function DashboardReviewCyclePage() {
 
             const json = await res.json();
             if (!json.success) {
+                if (json.data.access_blocked === true) {
+                    await fetchAllCycles();
+                }
                 throw new Error(json.message || "Failed to update cycle");
             }
 
@@ -176,7 +179,7 @@ export default function DashboardReviewCyclePage() {
             }
             setCycles(cycles => cycles.filter(cycle => cycle.review_cycle_id !== targetDeleteId));
             toast.success("Cycle deleted");
-            if(targetDeleteId === Number(reviewCycleId)) {
+            if (targetDeleteId === Number(reviewCycleId)) {
                 router.push('/admin/dashboard');
             }
         } catch (error: any) {

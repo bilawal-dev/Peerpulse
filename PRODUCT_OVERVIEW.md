@@ -13,9 +13,10 @@ PeerPulse is a cloud-based HR platform that lets companies design, run, and anal
    • Independent branding, employee directory, review cycles, and data.
 
 2. **Credit-Based Billing**  
-   • Companies purchase credit packages (subscription plans).  
-   • Credits are debited per employee action (peer selection, review submission, email reminders), giving transparent, pay-as-you-grow pricing.  
-   • Full invoice history and payment status tracking.
+   * In each reviewCylce based on how many employees are there, we calculate the cost
+   * cost = number of employees * 10$ ,
+   * and then you can do everytinhg
+   * if employeees are uploaded but paymetn is not paid, so we restrict that reviewCylce for enabling peer_selection and review_forms
 
 3. **Company (HR) Dashboard**
    **a. Review-Cycle Builder**  

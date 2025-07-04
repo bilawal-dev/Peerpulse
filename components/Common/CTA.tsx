@@ -9,7 +9,7 @@ const CTA = () => {
         Elevate your team&apos;s growth with data-driven 360 feedback
       </h1>
       <p className="text-white pt-6 lg:pt-[48px] text-lg">
-        Join leading teams already powering reviews and growth with PeerPulse.
+        Join leading teams using PeerPulse for data-driven 360° feedback that actually drives growth.
       </p>
 
       <div className="mt-[40px] flex flex-col w-full items-center lg:mt-[56px] lg:flex-row lg:justify-center gap-x-[40px]">
@@ -17,17 +17,17 @@ const CTA = () => {
           href={"/login"}
           className="py-[12px] px-[32px] bg-white rounded-[4px] text-pink-500 w-fit font-medium"
         >
-          Get Started Now
+          Start Your First Review Cycle
         </Link>
 
         <Link
           href={"/contact"}
           className="group inline-flex w-full items-center justify-center font-medium gap-x-3 mt-[32px] text-white lg:w-fit lg:mt-0"
         >
-          Contact sales{" "}
+          Talk to Sales{" "}
           <Image
             src={Arrow}
-            alt="Contact sales"
+            alt="Talk to sales"
             className="group-hover:-rotate-[30deg] duration-200"
           />
         </Link>

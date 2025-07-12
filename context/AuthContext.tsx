@@ -15,6 +15,7 @@ export interface AuthContextType {
   forgotPassword: (email: string, userType: "company" | "employee") => Promise<void>;
   resetPassword: (token: string, newPassword: string, userType: "company" | "employee") => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string, userType: "company" | "employee") => Promise<void>;
+  updateCompanyUserName: (name: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -216,8 +217,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // * UPDATE-USER-NAME (Updates just the name field in user state)
+  const updateCompanyUserName = (name: string) => {
+    setUser((prev: User | null) => prev ? { ...prev, name } : null);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, registerCompany, forgotPassword, resetPassword, changePassword }}    >
+    <AuthContext.Provider value={{ user, loading, login, logout, registerCompany, forgotPassword, resetPassword, changePassword, updateCompanyUserName }}    >
       {children}
     </AuthContext.Provider>
   );

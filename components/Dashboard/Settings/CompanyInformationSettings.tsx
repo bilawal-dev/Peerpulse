@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { UploadCloud, X } from "lucide-react";
 import ButtonLoader from "@/components/Common/ButtonLoader";
 import toast from "react-hot-toast";
+import { useAuth } from "@/context/AuthContext";
 
 export function CompanyInformationSettings() {
     // ─── Current “editable” states ────────────────────────────────────────────
@@ -25,6 +26,8 @@ export function CompanyInformationSettings() {
     const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const { updateCompanyUserName } = useAuth();
 
     // ─── “Original” values for change detection ─────────────────────────────────
     const [originalName, setOriginalName] = useState<string>("");
@@ -154,12 +157,18 @@ export function CompanyInformationSettings() {
                 body: formData,
             });
 
-            if (!res.ok) {
-                const errJson = await res.json();
-                throw new Error(errJson.message || "Failed to update company profile");
+            const jsonData = await res.json();
+            
+            if (!jsonData.success) {
+                throw new Error(jsonData.message || "Failed to update company profile");
             }
 
             toast.success("Company information saved successfully!");
+
+            // Update user name in context if it changed
+            if (companyName !== originalName) {
+                updateCompanyUserName(companyName);
+            }
 
             // Re‐fetch profile so we pick up any new logo URL or other changes
             const profileRes = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/company/profile`, {

@@ -1,7 +1,7 @@
 "use client";
 
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay } from "swiper/modules";
+import { Autoplay, FreeMode } from "swiper/modules";
 import Image from "next/image";
 import "swiper/css";
 
@@ -18,9 +18,15 @@ const BrandSlider = () => {
     return (
         <section className="w-full border-y border-gray-200 py-5 sm:py-6 lg:py-10 mt-10 sm:mt-20">
             <Swiper
-                modules={[Autoplay]}
-                autoplay={{ delay: 2500, disableOnInteraction: false }}
+                modules={[Autoplay, FreeMode]}
+                autoplay={{ 
+                    delay: 500, 
+                    disableOnInteraction: true,
+                    pauseOnMouseEnter: true
+                }}
+                freeMode={true}
                 loop={true}
+                speed={1000}
                 spaceBetween={20}
                 breakpoints={{
                     0: { slidesPerView: 3 },

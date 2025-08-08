@@ -1,7 +1,7 @@
-# Elevu - Performance Review Management System
+# Peerpulse - Performance Review Management System
 
 <div align="center">
-  <img src="public/assets/Logo.png" alt="Elevu Logo" width="200"/>
+  <img src="public/assets/Logo.png" alt="Peerpulse Logo" width="200"/>
   
   <p align="center">
     <strong>A comprehensive performance review management platform</strong>
@@ -21,7 +21,7 @@
 
 ## 🎯 Overview
 
-**Elevu** is a modern, full-featured performance review management system designed to streamline the employee evaluation process. It provides comprehensive tools for administrators to manage review cycles, employees to complete evaluations, and managers to track team performance.
+**Peerpulse** is a modern, full-featured performance review management system designed to streamline the employee evaluation process. It provides comprehensive tools for administrators to manage review cycles, employees to complete evaluations, and managers to track team performance.
 
 ### ✨ Key Highlights
 
